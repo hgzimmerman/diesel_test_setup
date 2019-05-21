@@ -36,6 +36,10 @@ where
 /// * `database_origin`: A string representing the scheme + authority pointing to the database server that tests will be conducted on.
 /// * `migrations directory`: A string pointing to the directory where Diesel migrations are stored.
 ///
+/// # Returns
+/// * A pool connected to the new database.
+/// * A RAII cleanup token that drops the database when it exits scope.
+///
 /// # Note
 /// The `admin_conn` should have been created with the same origin present in `database_origin`.
 pub fn setup_pool_random_db<Conn>(
@@ -58,7 +62,7 @@ where
 ///
 fn setup_pool_named_db<Conn>(
     admin_conn: Conn,
-    url_part: &str,
+    database_origin: &str,
     migrations_directory: &str,
     db_name: String,
 ) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
@@ -70,7 +74,7 @@ where
     // This makes the assumption that the provided database name does not already exist on the system.
     crate::reset::create_database(&admin_conn, &db_name).expect("Couldn't create database");
 
-    let url = format!("{}/{}", url_part, db_name);
+    let url = format!("{}/{}", database_origin, db_name);
     let manager = ConnectionManager::<Conn>::new(url);
 
     let pool = r2d2::Pool::builder()
@@ -78,11 +82,59 @@ where
         .build(manager)
         .expect("Couldn't create pool");
 
-//    let normal_conn: &Conn = ;
     run_migrations(pool.get().unwrap().deref(), migrations_directory);
 
     let cleanup = Cleanup(admin_conn, db_name);
     (pool, cleanup)
+}
+
+/// Creates a db with a random name using the administrative connection.
+/// The database will be deleted when the Cleanup return value is dropped.
+///
+/// # Arguments
+/// * `admin_conn`: A connection to a database that has the authority to create other databases on the system.
+/// * `database_origin`: A string representing the scheme + authority pointing to the database server that tests will be conducted on.
+/// * `migrations directory`: A string pointing to the directory where Diesel migrations are stored.
+///
+/// # Returns
+/// * A single connection to the new database.
+/// * A RAII cleanup token that drops the database when it exits scope.
+///
+/// # Note
+/// The `admin_conn` should have been created with the same origin present in `database_origin`.
+pub fn setup_random_db<Conn>(
+    admin_conn: Conn,
+    database_origin: &str,
+    migrations_directory: &str,
+) -> (Conn, Cleanup<Conn>)
+where
+    Conn: MigrationConnection + 'static,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+{
+    let db_name = nanoid::generate(40); // Gets a random url-safe string.
+    setup_named_db(admin_conn, database_origin, migrations_directory, db_name)
+}
+
+fn setup_named_db<Conn>(
+    admin_conn: Conn,
+    database_origin: &str,
+    migrations_directory: &str,
+    db_name: String,
+) -> (Conn, Cleanup<Conn>)
+where
+    Conn: MigrationConnection + 'static,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+{
+    crate::reset::create_database(&admin_conn, &db_name).expect("Couldn't create database");
+
+    let url = format!("{}/{}", database_origin, db_name);
+    let conn = Conn::establish(&url).expect("Should establish connection");
+
+    run_migrations(&conn, migrations_directory);
+    let cleanup = Cleanup(admin_conn, db_name);
+    (conn, cleanup)
 }
 
 // TODO all tests should be integration style.
