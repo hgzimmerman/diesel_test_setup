@@ -7,7 +7,7 @@ use crate::{
 use diesel::{query_dsl::RunQueryDsl, Connection};
 use migrations_internals as migrations;
 use migrations_internals::MigrationConnection;
-
+use std::path::Path;
 
 table! {
     pg_database (datname) {
@@ -56,15 +56,14 @@ where
 /// # Note
 /// The connection used here should be different from the admin connection used for resetting the database.
 /// Instead, the connection should be to the database on which tests will be performed on.
-pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &str)
+pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path)
 where
     T: MigrationConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
-    use std::path::Path;
 
-    let migrations_dir: &Path = Path::new(migrations_directory);
-    migrations::run_pending_migrations_in_directory(normal_conn, migrations_dir, &mut ::std::io::sink())
+//    let migrations_dir: &Path = Path::new(migrations_directory);
+    migrations::run_pending_migrations_in_directory(normal_conn, migrations_directory, &mut ::std::io::sink())
         .expect("Could not run migrations.");
 }
 

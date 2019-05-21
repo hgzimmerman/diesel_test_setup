@@ -6,6 +6,7 @@ use crate::reset::run_migrations;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
+use std::path::Path;
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -45,7 +46,7 @@ where
 pub fn setup_pool_random_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
-    migrations_directory: &str, // TODO make this a pathbuf
+    migrations_directory: &Path,
 ) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
 where
     Conn: MigrationConnection + 'static,
@@ -60,10 +61,11 @@ where
 
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
+/// Returns a Pool of connections.
 fn setup_pool_named_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
-    migrations_directory: &str,
+    migrations_directory: &Path,
     db_name: String,
 ) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
 where
@@ -105,7 +107,7 @@ where
 pub fn setup_random_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
-    migrations_directory: &str,
+    migrations_directory: &Path,
 ) -> (Conn, Cleanup<Conn>)
 where
     Conn: MigrationConnection + 'static,
@@ -116,10 +118,13 @@ where
     setup_named_db(admin_conn, database_origin, migrations_directory, db_name)
 }
 
+/// Utility function that creates a database with a known name and runs migrations on it.
+///
+/// Returns a single connection.
 fn setup_named_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
-    migrations_directory: &str,
+    migrations_directory: &Path,
     db_name: String,
 ) -> (Conn, Cleanup<Conn>)
 where
@@ -137,8 +142,6 @@ where
     (conn, cleanup)
 }
 
-// TODO all tests should be integration style.
-// Likely hide them behind some sort of ENV VAR that indicates that it is running in a docker container or something
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
@@ -165,7 +168,7 @@ pub(crate) mod test {
             let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
                 .expect("Should be able to connect to admin db");
             let _ =
-                setup_pool_named_db(admin_conn, url_origin, "../db/migrations", db_name.clone());
+                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone());
             panic!("expected_panic");
         })
         .expect_err("Should catch panic.");
@@ -185,7 +188,7 @@ pub(crate) mod test {
          let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
                 .expect("Should be able to connect to admin db");
         let (pool, cleanup) =
-                setup_pool_named_db(admin_conn, url_origin, "../db/migrations", db_name.clone());
+                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone());
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
