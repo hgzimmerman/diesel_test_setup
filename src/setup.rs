@@ -8,16 +8,6 @@ use crate::reset::run_migrations;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
-//
-
-//pub struct Cleanup(PgConnection, String);
-//
-//impl Drop for Cleanup {
-//    fn drop(&mut self) {
-//        crate::reset::drop_database(&self.0, &self.1)
-//            .expect("Couldn't drop database at end of test.");
-//    }
-//}
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -66,7 +56,6 @@ where
 
 
 
-
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
 fn setup_pool_named_db<Conn>(
@@ -91,8 +80,8 @@ where
         .build(manager)
         .expect("Couldn't create pool");
 
-    let normal_conn: &Conn = pool.get().unwrap().deref();
-    run_migrations(normal_conn, migrations_directory);
+//    let normal_conn: &Conn = ;
+    run_migrations(pool.get().unwrap().deref(), migrations_directory);
 
     let cleanup = Cleanup(admin_conn, db_name);
     (pool, cleanup)
@@ -131,7 +120,7 @@ pub(crate) mod test {
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
-        let database_exists: bool = crate::reset::pg_database_exists(&admin_conn, &db_name)
+        let database_exists: bool = admin_conn.database_exists( &db_name)
             .expect("Should determine if database exists");
         assert!(!database_exists)
     }
@@ -149,14 +138,14 @@ pub(crate) mod test {
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
 
-        let database_exists: bool = crate::reset::pg_database_exists(&admin_conn, &db_name)
+        let database_exists: bool = admin_conn.database_exists( &db_name)
             .expect("Should determine if database exists");
         assert!(database_exists);
 
         std::mem::drop(pool);
         std::mem::drop(cleanup);
 
-        let database_exists: bool = crate::reset::pg_database_exists(&admin_conn, &db_name)
+        let database_exists: bool = admin_conn.database_exists( &db_name)
             .expect("Should determine if database exists");
         assert!(!database_exists)
     }
