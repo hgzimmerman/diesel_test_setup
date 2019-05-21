@@ -1,10 +1,14 @@
-# Diesel Reset
+# Diesel Test Setup
 
-A small library for resetting a database using Diesel.
+A small library for setting up a database using Diesel, and then tearing down the database once the test is finished.
 
-The core exported function prevents parallel tests from running.
+Given a connection to a database that has super user permissions, this library will create a new, uniquely named database.
+Once a `Cleanup` struct that was created when the database was set up goes out of scope, its destructor will delete the database.
 
 
-#### Todo
-It may be a better strategy to implement Drop on some wrapper around a connection pool, and use a different, random, database name for each test.
-This won't be really resetting, but using Drop should ensure that if a panic occurs, the database environment isn't polluted by broken tests.
+### Features
+* Currently only supports Postgres
+* Currently only nly works with pooled connections.
+* Very much a work in progress.
+
+
