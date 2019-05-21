@@ -1,34 +1,13 @@
-use diesel::Connection;
 use diesel::{r2d2};
 use diesel::r2d2::ConnectionManager;
-use crate::reset::drop_database;
 use crate::reset::run_migrations;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
 use std::path::Path;
 use crate::database_error::DatabaseError;
+use crate::cleanup::Cleanup;
 
-/// Cleanup wrapper.
-/// Contains the admin connection and the name of the database (not the whole url).
-///
-/// When this struct goes out of scope, it will use the data it owns to drop the database it's
-/// associated with.
-pub struct Cleanup<Conn>(Conn, String)
-where
-    Conn: Connection,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword;
-
-impl <Conn> Drop for Cleanup<Conn>
-where
-    Conn: Connection,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword
-{
-    fn drop(&mut self) {
-        drop_database(&self.0, &self.1)
-            .expect("Couldn't drop database at end of test.");
-    }
-}
 
 /// Creates a db with a random name using the administrative connection.
 /// The database will be deleted when the Cleanup return value is dropped.
@@ -147,7 +126,8 @@ where
 pub(crate) mod test {
     use super::*;
     use diesel::PgConnection;
-    use crate::reset::test_util::database_exists;
+    use crate::test_util::database_exists;
+    use diesel::Connection;
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.
