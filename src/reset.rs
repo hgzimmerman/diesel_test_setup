@@ -4,19 +4,11 @@ use crate::{
     database_error::{DatabaseError, DatabaseResult},
     query_helper,
 };
-use diesel::{query_dsl::RunQueryDsl, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, QueryResult, /*MysqlConnection, */ Connection};
+use diesel::{query_dsl::RunQueryDsl, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, QueryResult, Connection};
 use migrations_internals as migrations;
 use diesel::dsl::sql;
 use migrations_internals::MigrationConnection;
 
-
-//pub fn run_migrations(conn: &PgConnection, migrations_directory: &str) {
-//    use std::path::Path;
-//
-//    let migrations_dir: &Path = Path::new(migrations_directory);
-//    migrations::run_pending_migrations_in_directory(conn, migrations_dir, &mut ::std::io::sink())
-//        .expect("Could not run migrations.");
-//}
 
 table! {
     pg_database (datname) {
@@ -29,33 +21,29 @@ table! {
 /// Drops the database, completely removing every table (and therefore every row) in the database.
 pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
 where
-    T: DropCreateDb + Connection,
+    T: Connection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
-    if admin_conn.database_exists(database_name)? {
-        let result = query_helper::drop_database(database_name)
-            .if_exists()
-            .execute(admin_conn)
-            .map_err(DatabaseError::from)
-            .map(|_| ());
+    let result = query_helper::drop_database(database_name)
+        .if_exists()
+        .execute(admin_conn)
+        .map_err(DatabaseError::from)
+        .map(|_| ());
 
-        if let Err(DatabaseError::QueryError(diesel::result::Error::DatabaseError(
-            diesel::result::DatabaseErrorKind::__Unknown,
-            _,
-        ))) = result
-        {
-            eprintln!("Could not drop DB !!!!!!!");
-        }
-        result
-    } else {
-        Ok(()) // Database has already been dropped
+    if let Err(DatabaseError::QueryError(diesel::result::Error::DatabaseError(
+        diesel::result::DatabaseErrorKind::__Unknown,
+        _,
+    ))) = result
+    {
+        eprintln!("Could not drop DB !!!!!!!");
     }
+    result
 }
 
 
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
 where
-    T: DropCreateDb + Connection,
+    T: Connection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
     query_helper::create_database(database_name)
@@ -71,7 +59,7 @@ where
 /// Instead, the connection should be to the database on which tests will be performed on.
 pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &str)
 where
-    T: DropCreateDb + MigrationConnection,
+    T: MigrationConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
     use std::path::Path;
@@ -83,41 +71,37 @@ where
 
 
 
-pub trait DropCreateDb: Connection {
-
-
-    fn database_exists(&self, database_name: &str) -> QueryResult<bool>;
-
-
-
-}
-
-
-impl DropCreateDb for PgConnection {
-    fn database_exists(&self, database_name: &str) -> QueryResult<bool> {
-        use self::pg_database::dsl::*;
-        pg_database
-            .select(datname)
-            .filter(datname.eq(database_name))
-            .filter(datistemplate.eq(false))
-            .get_result::<String>(self)
-            .optional()
-            .map(|x| x.is_some())
-    }
+/// Does the database with the given name exist?
+///
+/// Utility function that may be of some use in the future.
+#[allow(dead_code)]
+pub fn database_exists(conn: &PgConnection, database_name: &str) -> QueryResult<bool> {
+    use self::pg_database::dsl::*;
+    pg_database
+        .select(datname)
+        .filter(datname.eq(database_name))
+        .filter(datistemplate.eq(false))
+        .get_result::<String>(conn)
+        .optional()
+        .map(|x| x.is_some())
 }
 
 
 
-table! {
-    pg_user (usename) {
-        usename -> Text,
-        usesuper -> Bool,
-    }
-}
 
 /// Indicates if the current connection has superuser privileges.
+///
+/// Utility function that may be of some use in the future.
+#[allow(dead_code)]
 pub fn is_superuser(conn: &PgConnection) -> QueryResult<bool> {
     // select usesuper from pg_user where usename = CURRENT_USER;
+
+    table! {
+        pg_user (usename) {
+            usename -> Text,
+            usesuper -> Bool,
+        }
+    }
     pg_user::table
         .select(pg_user::usesuper)
         .filter(sql("usename = CURRENT_USER"))

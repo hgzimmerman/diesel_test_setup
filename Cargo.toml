@@ -8,6 +8,6 @@ edition = "2018"
 
 migrations_internals = "1.4.0"
 lazy_static = "1.3.0"
-diesel = { version = "1.4.2", features = ["postgres", "r2d2"] }
+diesel = { version = "1.4.2", features = ["postgres", "mysql", "sqlite", "r2d2"] }
 nanoid = "0.2.0"
 

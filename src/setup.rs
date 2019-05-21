@@ -1,13 +1,13 @@
-use crate::reset::{ DropCreateDb};
 #[cfg(test)]
 use diesel::Connection;
-use diesel::{r2d2, PgConnection};
+use diesel::{r2d2};
 use diesel::r2d2::ConnectionManager;
 use crate::reset::drop_database;
 use crate::reset::run_migrations;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
+use diesel::Connection;
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -16,12 +16,12 @@ use std::ops::Deref;
 /// associated with.
 pub struct Cleanup<Conn>(Conn, String)
 where
-    Conn: DropCreateDb,
+    Conn: Connection,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword;
 
-impl <Conn: DropCreateDb> Drop for Cleanup<Conn>
+impl <Conn> Drop for Cleanup<Conn>
 where
-    Conn: DropCreateDb,
+    Conn: Connection,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
     fn drop(&mut self) {
@@ -40,13 +40,13 @@ where
 ///
 /// # Note
 /// The `admin_conn` should have been created with the same origin present in `database_origin`.
-pub fn setup_pool_random_db<Conn: DropCreateDb + 'static>(
+pub fn setup_pool_random_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
     migrations_directory: &str, // TODO make this a pathbuf
 ) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
 where
-    Conn: DropCreateDb + MigrationConnection + 'static,
+    Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
 {
@@ -65,7 +65,7 @@ fn setup_pool_named_db<Conn>(
     db_name: String,
 ) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
 where
-    Conn: DropCreateDb + MigrationConnection + 'static,
+    Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
 {
