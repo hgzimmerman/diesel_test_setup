@@ -7,6 +7,7 @@ use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
 use std::path::Path;
+use crate::database_error::DatabaseError;
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -47,7 +48,7 @@ pub fn setup_pool_random_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
     migrations_directory: &Path,
-) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
+) -> Result<(r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>), DatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
@@ -67,14 +68,14 @@ fn setup_pool_named_db<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
+) -> Result<(r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>), DatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
 {
     // This makes the assumption that the provided database name does not already exist on the system.
-    crate::reset::create_database(&admin_conn, &db_name).expect("Couldn't create database");
+    crate::reset::create_database(&admin_conn, &db_name)?;
 
     let url = format!("{}/{}", database_origin, db_name);
     let manager = ConnectionManager::<Conn>::new(url);
@@ -82,12 +83,12 @@ where
     let pool = r2d2::Pool::builder()
         .max_size(3)
         .build(manager)
-        .expect("Couldn't create pool");
+        .map_err(|e: r2d2::PoolError | DatabaseError::from(e))?;
 
-    run_migrations(pool.get().unwrap().deref(), migrations_directory);
+    run_migrations(pool.get().unwrap().deref(), migrations_directory)?;
 
     let cleanup = Cleanup(admin_conn, db_name);
-    (pool, cleanup)
+    Ok((pool, cleanup))
 }
 
 /// Creates a db with a random name using the administrative connection.
@@ -108,7 +109,7 @@ pub fn setup_random_db<Conn>(
     admin_conn: Conn,
     database_origin: &str,
     migrations_directory: &Path,
-) -> (Conn, Cleanup<Conn>)
+) -> Result<(Conn, Cleanup<Conn>), DatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
@@ -126,20 +127,20 @@ fn setup_named_db<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> (Conn, Cleanup<Conn>)
+) -> Result<(Conn, Cleanup<Conn>), DatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
 {
-    crate::reset::create_database(&admin_conn, &db_name).expect("Couldn't create database");
+    crate::reset::create_database(&admin_conn, &db_name)?;
 
     let url = format!("{}/{}", database_origin, db_name);
-    let conn = Conn::establish(&url).expect("Should establish connection");
+    let conn = Conn::establish(&url).map_err(DatabaseError::from)?;
 
-    run_migrations(&conn, migrations_directory);
+    run_migrations(&conn, migrations_directory)?;
     let cleanup = Cleanup(admin_conn, db_name);
-    (conn, cleanup)
+    Ok((conn, cleanup))
 }
 
 #[cfg(test)]
@@ -188,7 +189,8 @@ pub(crate) mod test {
          let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
                 .expect("Should be able to connect to admin db");
         let (pool, cleanup) =
-                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone());
+                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone())
+                    .unwrap();
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");

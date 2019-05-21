@@ -3,16 +3,16 @@ use diesel::result;
 use std::{convert::From, error::Error, fmt, io};
 
 use self::DatabaseError::*;
+use diesel::r2d2;
+use diesel::migration::RunMigrationsError;
 
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
 
 /// Errors that can occur while setting up or operating the test database.
 #[derive(Debug)]
 pub enum DatabaseError {
-    #[allow(dead_code)]
-    CargoTomlNotFound,
-    #[allow(dead_code)]
-    DatabaseUrlMissing,
+    MigrationsError(RunMigrationsError),
+    PoolCreationError(r2d2::PoolError),
     IoError(io::Error),
     QueryError(result::Error),
     ConnectionError(result::ConnectionError),
@@ -36,13 +36,29 @@ impl From<result::ConnectionError> for DatabaseError {
     }
 }
 
+impl From<r2d2::PoolError> for DatabaseError {
+    fn from(e: r2d2::PoolError) -> Self {
+        PoolCreationError(e)
+    }
+}
+
+impl From<RunMigrationsError> for DatabaseError {
+    fn from(e: RunMigrationsError) -> Self {
+        MigrationsError(e)
+    }
+}
+
 impl Error for DatabaseError {
     fn description(&self) -> &str {
         match *self {
-            CargoTomlNotFound => "Unable to find Cargo.toml in this directory or any parent directories.",
-            DatabaseUrlMissing => {
-                "The --database-url argument must be passed, or the DATABASE_ORIGIN environment variable must be set."
-            }
+            MigrationsError(ref error) => error
+                .source()
+                .map(Error::description)
+                .unwrap_or_else(|| error.description()),
+            PoolCreationError(ref error) => error
+                .source()
+                .map(Error::description)
+                .unwrap_or_else(|| error.description()),
             IoError(ref error) => error
                 .source()
                 .map(Error::description)
@@ -68,7 +84,7 @@ impl fmt::Display for DatabaseError {
 impl PartialEq for DatabaseError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (&CargoTomlNotFound, &CargoTomlNotFound) => true,
+//            (&CargoTomlNotFound, &CargoTomlNotFound) => true,
             _ => false,
         }
     }

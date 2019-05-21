@@ -10,6 +10,4 @@ Once a `Cleanup` struct that was created when the database was set up goes out o
 * Supports Postgres, MySql, and squite.
   * MySql and Sqlite are untested, although they should just work.
     * The core exported functions use standard SQL, which should work across all databases supported by Diesel.
-* A bunch of unwraps and escapes.
-* Very much a work in progress.
 

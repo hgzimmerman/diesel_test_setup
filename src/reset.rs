@@ -56,15 +56,13 @@ where
 /// # Note
 /// The connection used here should be different from the admin connection used for resetting the database.
 /// Instead, the connection should be to the database on which tests will be performed on.
-pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path)
+pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path) -> Result<(), DatabaseError>
 where
     T: MigrationConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
 {
-
-//    let migrations_dir: &Path = Path::new(migrations_directory);
     migrations::run_pending_migrations_in_directory(normal_conn, migrations_directory, &mut ::std::io::sink())
-        .expect("Could not run migrations.");
+        .map_err(DatabaseError::from)
 }
 
 
