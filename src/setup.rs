@@ -1,4 +1,3 @@
-#[cfg(test)]
 use diesel::Connection;
 use diesel::{r2d2};
 use diesel::r2d2::ConnectionManager;
@@ -7,7 +6,6 @@ use crate::reset::run_migrations;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
 use std::ops::Deref;
-use diesel::Connection;
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -92,6 +90,8 @@ where
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
+    use diesel::PgConnection;
+    use crate::reset::test_util::database_exists;
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.
@@ -120,7 +120,7 @@ pub(crate) mod test {
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
-        let database_exists: bool = admin_conn.database_exists( &db_name)
+        let database_exists: bool = database_exists(&admin_conn, &db_name)
             .expect("Should determine if database exists");
         assert!(!database_exists)
     }
@@ -138,15 +138,15 @@ pub(crate) mod test {
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
 
-        let database_exists: bool = admin_conn.database_exists( &db_name)
+        let db_exists: bool = database_exists( &admin_conn, &db_name)
             .expect("Should determine if database exists");
-        assert!(database_exists);
+        assert!(db_exists);
 
         std::mem::drop(pool);
         std::mem::drop(cleanup);
 
-        let database_exists: bool = admin_conn.database_exists( &db_name)
+        let db_exists: bool = database_exists( &admin_conn, &db_name)
             .expect("Should determine if database exists");
-        assert!(!database_exists)
+        assert!(!db_exists)
     }
 }
