@@ -8,7 +8,7 @@ Once a `Cleanup` struct that was created when the database was set up goes out o
 
 ### Features
 * Currently only supports Postgres
-* Currently only nly works with pooled connections.
+* Currently only works with pooled connections.
 * Very much a work in progress.
 
 
