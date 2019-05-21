@@ -1,5 +1,5 @@
-use diesel::Connection;
 use crate::reset::drop_database;
+use diesel::Connection;
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
@@ -11,13 +11,12 @@ where
     Conn: Connection,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword;
 
-impl <Conn> Drop for Cleanup<Conn>
+impl<Conn> Drop for Cleanup<Conn>
 where
     Conn: Connection,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     fn drop(&mut self) {
-        drop_database(&self.0, &self.1)
-            .expect("Couldn't drop database at end of test.");
+        drop_database(&self.0, &self.1).expect("Couldn't drop database at end of test.");
     }
 }

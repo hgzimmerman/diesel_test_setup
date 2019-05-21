@@ -3,8 +3,7 @@ use diesel::result;
 use std::{convert::From, error::Error, fmt, io};
 
 use self::DatabaseError::*;
-use diesel::r2d2;
-use diesel::migration::RunMigrationsError;
+use diesel::{migration::RunMigrationsError, r2d2};
 
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
 
@@ -65,11 +64,11 @@ impl Error for DatabaseError {
                 .unwrap_or_else(|| error.description()),
             QueryError(ref error) => error
                 .source()
-                .map(Error:: description)
+                .map(Error::description)
                 .unwrap_or_else(|| error.description()),
             ConnectionError(ref error) => error
                 .source()
-                .map( Error::description)
+                .map(Error::description)
                 .unwrap_or_else(|| error.description()),
         }
     }
@@ -84,7 +83,7 @@ impl fmt::Display for DatabaseError {
 impl PartialEq for DatabaseError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-//            (&CargoTomlNotFound, &CargoTomlNotFound) => true,
+            //            (&CargoTomlNotFound, &CargoTomlNotFound) => true,
             _ => false,
         }
     }

@@ -9,12 +9,11 @@ use migrations_internals as migrations;
 use migrations_internals::MigrationConnection;
 use std::path::Path;
 
-
 /// Drops the database, completely removing every table (and therefore every row) in the database.
 pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
 where
     T: Connection,
-    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     let result = query_helper::drop_database(database_name)
         .if_exists()
@@ -32,11 +31,10 @@ where
     result
 }
 
-
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
 where
     T: Connection,
-    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     query_helper::create_database(database_name)
         .execute(admin_conn)
@@ -52,10 +50,12 @@ where
 pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path) -> Result<(), DatabaseError>
 where
     T: MigrationConnection,
-    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
-    migrations::run_pending_migrations_in_directory(normal_conn, migrations_directory, &mut ::std::io::sink())
-        .map_err(DatabaseError::from)
+    migrations::run_pending_migrations_in_directory(
+        normal_conn,
+        migrations_directory,
+        &mut ::std::io::sink(),
+    )
+    .map_err(DatabaseError::from)
 }
-
-

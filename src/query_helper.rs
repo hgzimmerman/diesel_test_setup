@@ -1,4 +1,9 @@
-use diesel::{backend::Backend, query_builder::*, result::QueryResult, RunQueryDsl};
+use diesel::{
+    backend::Backend,
+    query_builder::{AstPass, QueryFragment, QueryId},
+    result::QueryResult,
+    RunQueryDsl,
+};
 
 #[derive(Debug, Clone)]
 pub struct DropDatabaseStatement {

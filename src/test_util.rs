@@ -1,6 +1,7 @@
-use diesel::{query_dsl::RunQueryDsl, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, QueryResult};
-use diesel::dsl::sql;
-use diesel::table;
+use diesel::{
+    dsl::sql, query_dsl::RunQueryDsl, table, ExpressionMethods, OptionalExtension, PgConnection,
+    QueryDsl, QueryResult,
+};
 
 table! {
     pg_database (datname) {
@@ -31,11 +32,11 @@ pub fn is_superuser(conn: &PgConnection) -> QueryResult<bool> {
     // select usesuper from pg_user where usename = CURRENT_USER;
 
     table! {
-            pg_user (usename) {
-                usename -> Text,
-                usesuper -> Bool,
-            }
+        pg_user (usename) {
+            usename -> Text,
+            usesuper -> Bool,
         }
+    }
     pg_user::table
         .select(pg_user::usesuper)
         .filter(sql("usename = CURRENT_USER"))
@@ -44,8 +45,8 @@ pub fn is_superuser(conn: &PgConnection) -> QueryResult<bool> {
 
 mod test {
     use super::*;
-    use diesel::Connection;
     use crate::setup::test::DROP_DATABASE_URL;
+    use diesel::Connection;
 
     #[test]
     fn is_super() {
@@ -55,6 +56,3 @@ mod test {
         assert!(is_super)
     }
 }
-
-
-

@@ -1,13 +1,8 @@
-use diesel::{r2d2};
-use diesel::r2d2::ConnectionManager;
-use crate::reset::run_migrations;
+use crate::{cleanup::Cleanup, database_error::DatabaseError, reset::run_migrations};
+use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
-use std::ops::Deref;
-use std::path::Path;
-use crate::database_error::DatabaseError;
-use crate::cleanup::Cleanup;
-
+use std::{ops::Deref, path::Path};
 
 /// Creates a db with a random name using the administrative connection.
 /// The database will be deleted when the Cleanup return value is dropped.
@@ -31,13 +26,11 @@ pub fn setup_pool_random_db<Conn>(
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     let db_name = nanoid::generate(40); // Gets a random url-safe string.
     setup_pool_named_db(admin_conn, database_origin, migrations_directory, db_name)
 }
-
-
 
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
@@ -51,7 +44,7 @@ fn setup_pool_named_db<Conn>(
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     // This makes the assumption that the provided database name does not already exist on the system.
     crate::reset::create_database(&admin_conn, &db_name)?;
@@ -62,7 +55,7 @@ where
     let pool = r2d2::Pool::builder()
         .max_size(3)
         .build(manager)
-        .map_err(|e: r2d2::PoolError | DatabaseError::from(e))?;
+        .map_err(|e: r2d2::PoolError| DatabaseError::from(e))?;
 
     run_migrations(pool.get().unwrap().deref(), migrations_directory)?;
 
@@ -92,7 +85,7 @@ pub fn setup_random_db<Conn>(
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     let db_name = nanoid::generate(40); // Gets a random url-safe string.
     setup_named_db(admin_conn, database_origin, migrations_directory, db_name)
@@ -110,7 +103,7 @@ fn setup_named_db<Conn>(
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     crate::reset::create_database(&admin_conn, &db_name)?;
 
@@ -125,9 +118,8 @@ where
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use diesel::PgConnection;
     use crate::test_util::database_exists;
-    use diesel::Connection;
+    use diesel::{Connection, PgConnection};
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.
@@ -148,16 +140,20 @@ pub(crate) mod test {
         std::panic::catch_unwind(|| {
             let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
                 .expect("Should be able to connect to admin db");
-            let _ =
-                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone());
+            let _ = setup_pool_named_db(
+                admin_conn,
+                url_origin,
+                Path::new("../db/migrations"),
+                db_name.clone(),
+            );
             panic!("expected_panic");
         })
         .expect_err("Should catch panic.");
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
-        let database_exists: bool = database_exists(&admin_conn, &db_name)
-            .expect("Should determine if database exists");
+        let database_exists: bool =
+            database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
         assert!(!database_exists)
     }
 
@@ -166,24 +162,28 @@ pub(crate) mod test {
         let url_origin = DATABASE_ORIGIN;
         let db_name = "cleanup_drops_database_TEST_DB".to_string();
 
-         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
-                .expect("Should be able to connect to admin db");
-        let (pool, cleanup) =
-                setup_pool_named_db(admin_conn, url_origin, Path::new("../db/migrations"), db_name.clone())
-                    .unwrap();
+        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            .expect("Should be able to connect to admin db");
+        let (pool, cleanup) = setup_pool_named_db(
+            admin_conn,
+            url_origin,
+            Path::new("../db/migrations"),
+            db_name.clone(),
+        )
+        .unwrap();
 
         let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
             .expect("Should be able to connect to admin db");
 
-        let db_exists: bool = database_exists( &admin_conn, &db_name)
-            .expect("Should determine if database exists");
+        let db_exists: bool =
+            database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
         assert!(db_exists);
 
         std::mem::drop(pool);
         std::mem::drop(cleanup);
 
-        let db_exists: bool = database_exists( &admin_conn, &db_name)
-            .expect("Should determine if database exists");
+        let db_exists: bool =
+            database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
         assert!(!db_exists)
     }
 }
