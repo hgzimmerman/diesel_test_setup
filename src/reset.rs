@@ -4,17 +4,35 @@ use crate::{
     database_error::{DatabaseError, DatabaseResult},
     query_helper,
 };
-use diesel::{
-    query_dsl::RunQueryDsl, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl,
-    QueryResult,
-};
+use diesel::{query_dsl::RunQueryDsl, ExpressionMethods, OptionalExtension, PgConnection, QueryDsl, QueryResult, /*MysqlConnection, */ Connection};
 use migrations_internals as migrations;
 use diesel::dsl::sql;
+use migrations_internals::MigrationConnection;
+
+
+//pub fn run_migrations(conn: &PgConnection, migrations_directory: &str) {
+//    use std::path::Path;
+//
+//    let migrations_dir: &Path = Path::new(migrations_directory);
+//    migrations::run_pending_migrations_in_directory(conn, migrations_dir, &mut ::std::io::sink())
+//        .expect("Could not run migrations.");
+//}
+
+table! {
+    pg_database (datname) {
+        datname -> Text,
+        datistemplate -> Bool,
+    }
+}
+
 
 /// Drops the database, completely removing every table (and therefore every row) in the database.
-pub fn drop_database(admin_conn: &PgConnection, database_name: &str) -> DatabaseResult<()> {
-    if pg_database_exists(&admin_conn, database_name)? {
-        //        std::thread::sleep(std::time::Duration::new(1,0));
+pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
+where
+    T: DropCreateDb + Connection,
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+{
+    if admin_conn.database_exists(database_name)? {
         let result = query_helper::drop_database(database_name)
             .if_exists()
             .execute(admin_conn)
@@ -34,13 +52,16 @@ pub fn drop_database(admin_conn: &PgConnection, database_name: &str) -> Database
     }
 }
 
-/// Recreates the database.
-pub fn create_database(admin_conn: &PgConnection, database_name: &str) -> DatabaseResult<()> {
-    let db_result = query_helper::create_database(database_name)
+
+pub fn create_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>
+where
+    T: DropCreateDb + Connection,
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+{
+    query_helper::create_database(database_name)
         .execute(admin_conn)
         .map_err(DatabaseError::from)
-        .map(|_| ());
-    db_result
+        .map(|_| ())
 }
 
 /// Creates tables in the database.
@@ -48,33 +69,44 @@ pub fn create_database(admin_conn: &PgConnection, database_name: &str) -> Databa
 /// # Note
 /// The connection used here should be different from the admin connection used for resetting the database.
 /// Instead, the connection should be to the database on which tests will be performed on.
-pub fn run_migrations(conn: &PgConnection, migrations_directory: &str) {
+pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &str)
+where
+    T: DropCreateDb + MigrationConnection,
+    <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+{
     use std::path::Path;
 
     let migrations_dir: &Path = Path::new(migrations_directory);
-    migrations::run_pending_migrations_in_directory(conn, migrations_dir, &mut ::std::io::sink())
+    migrations::run_pending_migrations_in_directory(normal_conn, migrations_dir, &mut ::std::io::sink())
         .expect("Could not run migrations.");
 }
 
-table! {
-    pg_database (datname) {
-        datname -> Text,
-        datistemplate -> Bool,
+
+
+pub trait DropCreateDb: Connection {
+
+
+    fn database_exists(&self, database_name: &str) -> QueryResult<bool>;
+
+
+
+}
+
+
+impl DropCreateDb for PgConnection {
+    fn database_exists(&self, database_name: &str) -> QueryResult<bool> {
+        use self::pg_database::dsl::*;
+        pg_database
+            .select(datname)
+            .filter(datname.eq(database_name))
+            .filter(datistemplate.eq(false))
+            .get_result::<String>(self)
+            .optional()
+            .map(|x| x.is_some())
     }
 }
 
-/// Convenience function used when dropping the database.
-pub(crate) fn pg_database_exists(conn: &PgConnection, database_name: &str) -> QueryResult<bool> {
-    use self::pg_database::dsl::*;
 
-    pg_database
-        .select(datname)
-        .filter(datname.eq(database_name))
-        .filter(datistemplate.eq(false))
-        .get_result::<String>(conn)
-        .optional()
-        .map(|x| x.is_some())
-}
 
 table! {
     pg_user (usename) {

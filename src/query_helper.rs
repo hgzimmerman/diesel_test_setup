@@ -23,6 +23,7 @@ impl DropDatabaseStatement {
 }
 
 impl<DB: Backend> QueryFragment<DB> for DropDatabaseStatement {
+    /// This works regardless of the backend.
     fn walk_ast(&self, mut out: AstPass<DB>) -> QueryResult<()> {
         out.push_sql("DROP DATABASE ");
         if self.if_exists {

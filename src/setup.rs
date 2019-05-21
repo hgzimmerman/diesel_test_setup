@@ -1,19 +1,41 @@
-use crate::reset::run_migrations;
+use crate::reset::{ DropCreateDb};
 #[cfg(test)]
 use diesel::Connection;
 use diesel::{r2d2, PgConnection};
 use diesel::r2d2::ConnectionManager;
+use crate::reset::drop_database;
+use crate::reset::run_migrations;
+use migrations_internals::MigrationConnection;
+use r2d2::PooledConnection;
+use std::ops::Deref;
+//
+
+//pub struct Cleanup(PgConnection, String);
+//
+//impl Drop for Cleanup {
+//    fn drop(&mut self) {
+//        crate::reset::drop_database(&self.0, &self.1)
+//            .expect("Couldn't drop database at end of test.");
+//    }
+//}
 
 /// Cleanup wrapper.
 /// Contains the admin connection and the name of the database (not the whole url).
 ///
 /// When this struct goes out of scope, it will use the data it owns to drop the database it's
 /// associated with.
-pub struct Cleanup(PgConnection, String);
+pub struct Cleanup<Conn>(Conn, String)
+where
+    Conn: DropCreateDb,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword;
 
-impl Drop for Cleanup {
+impl <Conn: DropCreateDb> Drop for Cleanup<Conn>
+where
+    Conn: DropCreateDb,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword
+{
     fn drop(&mut self) {
-        crate::reset::drop_database(&self.0, &self.1)
+        drop_database(&self.0, &self.1)
             .expect("Couldn't drop database at end of test.");
     }
 }
@@ -28,35 +50,49 @@ impl Drop for Cleanup {
 ///
 /// # Note
 /// The `admin_conn` should have been created with the same origin present in `database_origin`.
-pub fn setup_pool_random_db(
-    admin_conn: PgConnection,
+pub fn setup_pool_random_db<Conn: DropCreateDb + 'static>(
+    admin_conn: Conn,
     database_origin: &str,
     migrations_directory: &str, // TODO make this a pathbuf
-) -> (r2d2::Pool<ConnectionManager<PgConnection>>, Cleanup) {
+) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
+where
+    Conn: DropCreateDb + MigrationConnection + 'static,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+{
     let db_name = nanoid::generate(40); // Gets a random url-safe string.
     setup_pool_named_db(admin_conn, database_origin, migrations_directory, db_name)
 }
 
+
+
+
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
-fn setup_pool_named_db(
-    admin_conn: PgConnection,
+fn setup_pool_named_db<Conn>(
+    admin_conn: Conn,
     url_part: &str,
     migrations_directory: &str,
     db_name: String,
-) -> (r2d2::Pool<ConnectionManager<PgConnection>>, Cleanup) {
+) -> (r2d2::Pool<ConnectionManager<Conn>>, Cleanup<Conn>)
+where
+    Conn: DropCreateDb + MigrationConnection + 'static,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
+    PooledConnection<ConnectionManager<Conn>>: Deref<Target=Conn>
+{
     // This makes the assumption that the provided database name does not already exist on the system.
     crate::reset::create_database(&admin_conn, &db_name).expect("Couldn't create database");
 
     let url = format!("{}/{}", url_part, db_name);
-    let manager = ConnectionManager::<PgConnection>::new(url);
+    let manager = ConnectionManager::<Conn>::new(url);
 
     let pool = r2d2::Pool::builder()
         .max_size(3)
         .build(manager)
         .expect("Couldn't create pool");
 
-    run_migrations(&pool.get().unwrap(), migrations_directory);
+    let normal_conn: &Conn = pool.get().unwrap().deref();
+    run_migrations(normal_conn, migrations_directory);
 
     let cleanup = Cleanup(admin_conn, db_name);
     (pool, cleanup)
