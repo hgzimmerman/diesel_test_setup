@@ -25,8 +25,21 @@ use diesel_test_setup::TestDatabaseBuilder;
 // Database has been cleaned up.
 ```
 
+### Testing
+Currently, tests only cover PostgreSql, and rely on environment configurations that are external to this project.
+For those reasons, you shouldn't expect tests to run out-of-the-box.
+Some effort is being directed towards setting up a testing environment using Docker so that both PostgreSql and MySql can be tested.
+
 
 ### Features
-* Supports Postgres and MySql.
+* Supports PostgreSql and MySql.
   * MySql is untested, although it should just work.
+* Both `r2d2::Pools` and `diesel::Connections` are supported.
+* Automatic destruction of test databases.
 
+
+### Support Commitment
+The scope and features of this project are pretty minimal and should be easy to maintain.
+I consider this project to be feature-complete, although if you find something lacking, feel free to open an Issue or PR.
+The crate is listed under passively maintained in its `cargo.toml`, should I cease to be able to maintain this crate,
+I will alter that tag to indicate that.

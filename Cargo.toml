@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Henry Zimmerman <zimhen7@gmail.com>"]
 edition = "2018"
 license = "MIT"
+categories = ["database", "development-tools::testing"]
+keywords = ["diesel", "integration", "testing"]
+maintenance = { status = "passively-maintained" }
 
 
 [dependencies]
