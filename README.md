@@ -41,5 +41,5 @@ Some effort is being directed towards setting up a testing environment using Doc
 ### Support Commitment
 The scope and features of this project are pretty minimal and should be easy to maintain.
 I consider this project to be feature-complete, although if you find something lacking, feel free to open an Issue or PR.
-The crate is listed under passively maintained in its `cargo.toml`, should I cease to be able to maintain this crate,
-I will alter that tag to indicate that.
+The crate is listed under `passively-maintained` in its `Cargo.toml`, should I cease to be able to maintain this crate,
+I will alter that tag to `looking-for-maintainer`
