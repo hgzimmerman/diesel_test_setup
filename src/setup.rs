@@ -1,10 +1,10 @@
 use crate::{cleanup::Cleanup, database_error::DatabaseError, reset::run_migrations};
 use diesel::r2d2::{self, ConnectionManager};
+use migrations_internals::find_migrations_directory;
 use migrations_internals::MigrationConnection;
 use r2d2::PooledConnection;
-use std::{ops::Deref, path::Path};
-use migrations_internals::find_migrations_directory;
 use std::path::PathBuf;
+use std::{ops::Deref, path::Path};
 
 #[derive(Debug)]
 enum DatabaseNameOption {
@@ -12,7 +12,6 @@ enum DatabaseNameOption {
     RandomWithPrefix(String),
     Custom(String),
 }
-
 
 /// Builder for ephemeral test databases.
 #[derive(Debug)]
@@ -28,13 +27,12 @@ pub struct TestDatabaseBuilder<'a, Conn> {
     db_name: DatabaseNameOption,
 }
 
-impl <'a, Conn> TestDatabaseBuilder<'a, Conn>
+impl<'a, Conn> TestDatabaseBuilder<'a, Conn>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
-
     /// Creates a new builder.
     ///
     /// # Arguments
@@ -107,19 +105,25 @@ where
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
     /// * The `Pool` _must_ be dropped first. If `Cleanup` drops first instead,
     /// then it will complain that the database is still in use and the database will not be dropped.
-    pub fn setup_pool(self) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), DatabaseError> {
-        let migrations_directory: PathBuf = self.migrations_directory.map_or_else(|| find_migrations_directory(), Ok)?;
+    pub fn setup_pool(
+        self,
+    ) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), DatabaseError> {
+        let migrations_directory: PathBuf = self
+            .migrations_directory
+            .map_or_else(|| find_migrations_directory(), Ok)?;
         let db_name = match self.db_name {
             DatabaseNameOption::Random => nanoid::generate(40),
             DatabaseNameOption::Custom(name) => name,
-            DatabaseNameOption::RandomWithPrefix(prefix) => format!("{}{}",prefix, nanoid::generate(40))
+            DatabaseNameOption::RandomWithPrefix(prefix) => {
+                format!("{}{}", prefix, nanoid::generate(40))
+            }
         };
 
         setup_named_db_pool(
             self.admin_conn,
             self.database_origin,
             migrations_directory.deref(),
-            db_name
+            db_name,
         )
     }
 
@@ -132,23 +136,25 @@ where
     /// * The `Conn` _must_ be dropped first. If `Cleanup` drops first instead,
     /// then it will complain that the database is still in use and the database will not be dropped.
     pub fn setup_connection(self) -> Result<(Cleanup<Conn>, Conn), DatabaseError> {
-        let migrations_directory: PathBuf = self.migrations_directory.map_or_else(|| find_migrations_directory(), Ok)?;
+        let migrations_directory: PathBuf = self
+            .migrations_directory
+            .map_or_else(|| find_migrations_directory(), Ok)?;
         let db_name = match self.db_name {
             DatabaseNameOption::Random => nanoid::generate(40),
             DatabaseNameOption::Custom(name) => name,
-            DatabaseNameOption::RandomWithPrefix(prefix) => format!("{}_{}", prefix, nanoid::generate(40))
+            DatabaseNameOption::RandomWithPrefix(prefix) => {
+                format!("{}_{}", prefix, nanoid::generate(40))
+            }
         };
 
         setup_named_db(
             self.admin_conn,
             self.database_origin,
             migrations_directory.deref(),
-            db_name
+            db_name,
         )
     }
-
 }
-
 
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
@@ -170,17 +176,13 @@ where
     let url = format!("{}/{}", database_origin, db_name); // TODO this may only work with postgres
     let manager = ConnectionManager::<Conn>::new(url);
 
-    let pool = r2d2::Pool::builder()
-        .max_size(3)
-        .build(manager)?;
+    let pool = r2d2::Pool::builder().max_size(3).build(manager)?;
 
     run_migrations(pool.get().unwrap().deref(), migrations_directory)?;
 
     let cleanup = Cleanup(admin_conn, db_name);
     Ok((cleanup, pool))
 }
-
-
 
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
@@ -209,9 +211,9 @@ where
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
+    use crate::reset::drop_database;
     use crate::test_util::database_exists;
     use diesel::{Connection, PgConnection};
-    use crate::reset::drop_database;
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.
@@ -244,7 +246,8 @@ pub(crate) mod test {
                 url_origin,
                 Path::new("../migrations"),
                 db_name.clone(),
-            ).expect("create db");
+            )
+            .expect("create db");
             panic!("expected_panic");
         })
         .expect_err("Should catch panic.");
