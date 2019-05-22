@@ -34,7 +34,7 @@ Some effort is being directed towards setting up a testing environment using Doc
 ### Features
 * Supports PostgreSql and MySql.
   * MySql is untested, although it should just work.
-* Both `r2d2::Pools` and `diesel::Connections` are supported.
+* Both `r2d2::Pool`s and `diesel::Connection`s are supported.
 * Automatic destruction of test databases.
 
 
