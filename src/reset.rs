@@ -15,20 +15,11 @@ where
     T: Connection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
-    let result = query_helper::drop_database(database_name)
+    query_helper::drop_database(database_name)
         .if_exists()
         .execute(admin_conn)
         .map_err(DatabaseError::from)
-        .map(|_| ());
-
-    if let Err(DatabaseError::QueryError(diesel::result::Error::DatabaseError(
-        diesel::result::DatabaseErrorKind::__Unknown,
-        _,
-    ))) = result
-    {
-        eprintln!("Could not drop DB !!!!!!!");
-    }
-    result
+        .map(|_| ())
 }
 
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> DatabaseResult<()>

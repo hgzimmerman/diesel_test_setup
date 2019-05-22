@@ -1,4 +1,4 @@
-//! This crate relies heavily on the implementation of diesel_cli for performing the database resets.
+//! Provides functions for setting up unique databases that are automatically dropped when tests finish.
 
 #[cfg(test)]
 #[macro_use]
@@ -16,4 +16,5 @@ pub mod setup;
 #[cfg(test)]
 mod test_util;
 
-pub use setup::{setup_pool_random_db, setup_random_db};
+pub use setup::{setup_unique_db_pool, setup_unique_db};
+pub use cleanup::Cleanup;

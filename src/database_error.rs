@@ -4,13 +4,15 @@ use std::{convert::From, error::Error, fmt, io};
 
 use self::DatabaseError::*;
 use diesel::{migration::RunMigrationsError, r2d2};
+use migrations_internals::MigrationError;
 
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
 
 /// Errors that can occur while setting up or operating the test database.
 #[derive(Debug)]
 pub enum DatabaseError {
-    MigrationsError(RunMigrationsError),
+    RunMigrationsError(RunMigrationsError),
+    MigrationError(MigrationError),
     PoolCreationError(r2d2::PoolError),
     IoError(io::Error),
     QueryError(result::Error),
@@ -43,14 +45,24 @@ impl From<r2d2::PoolError> for DatabaseError {
 
 impl From<RunMigrationsError> for DatabaseError {
     fn from(e: RunMigrationsError) -> Self {
-        MigrationsError(e)
+        RunMigrationsError(e)
+    }
+}
+
+impl From<MigrationError> for DatabaseError {
+    fn from(e: MigrationError) -> Self {
+        MigrationError(e)
     }
 }
 
 impl Error for DatabaseError {
     fn description(&self) -> &str {
         match *self {
-            MigrationsError(ref error) => error
+            RunMigrationsError(ref error) => error
+                .source()
+                .map(Error::description)
+                .unwrap_or_else(|| error.description()),
+            MigrationError(ref error) => error
                 .source()
                 .map(Error::description)
                 .unwrap_or_else(|| error.description()),
