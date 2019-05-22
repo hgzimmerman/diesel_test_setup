@@ -6,8 +6,27 @@ Given a connection to a database that has super user permissions, this library w
 Once a `Cleanup` struct that was created when the database was set up goes out of scope, its destructor will delete the database.
 
 
+```rust
+use diesel_test_setup::TestDatabaseBuilder;
+
+{
+    let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
+    const DATABASE_ORIGIN: &str = "postgres://localhost";
+    let (_cleanup, pool) = TestDatabaseBuilder::new(
+        admin_conn,
+        DATABASE_ORIGIN
+    )
+    .setup_pool()
+    .expect("Could not create the database.");
+
+    // Perform your test using pool
+}
+
+// Database has been cleaned up.
+```
+
+
 ### Features
-* Supports Postgres, MySql, and squite.
-  * MySql and Sqlite are untested, although they should just work.
-    * The core exported functions use standard SQL, which should work across all databases supported by Diesel.
+* Supports Postgres and MySql.
+  * MySql is untested, although it should just work.
 
