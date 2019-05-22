@@ -1,4 +1,4 @@
-use crate::{cleanup::Cleanup, database_error::DatabaseError, reset::run_migrations};
+use crate::{cleanup::Cleanup, database_error::TestDatabaseError, reset::run_migrations};
 use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::find_migrations_directory;
 use migrations_internals::MigrationConnection;
@@ -107,7 +107,7 @@ where
     /// then it will complain that the database is still in use and the database will not be dropped.
     pub fn setup_pool(
         self,
-    ) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), DatabaseError> {
+    ) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), TestDatabaseError> {
         let migrations_directory: PathBuf = self
             .migrations_directory
             .map_or_else(|| find_migrations_directory(), Ok)?;
@@ -135,7 +135,7 @@ where
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
     /// * The `Conn` _must_ be dropped first. If `Cleanup` drops first instead,
     /// then it will complain that the database is still in use and the database will not be dropped.
-    pub fn setup_connection(self) -> Result<(Cleanup<Conn>, Conn), DatabaseError> {
+    pub fn setup_connection(self) -> Result<(Cleanup<Conn>, Conn), TestDatabaseError> {
         let migrations_directory: PathBuf = self
             .migrations_directory
             .map_or_else(|| find_migrations_directory(), Ok)?;
@@ -164,7 +164,7 @@ fn setup_named_db_pool<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), DatabaseError>
+) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), TestDatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
@@ -192,7 +192,7 @@ fn setup_named_db<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> Result<(Cleanup<Conn>, Conn), DatabaseError>
+) -> Result<(Cleanup<Conn>, Conn), TestDatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,

@@ -2,15 +2,15 @@ use diesel::result;
 
 use std::{convert::From, error::Error, fmt, io};
 
-use self::DatabaseError::*;
+use self::TestDatabaseError::*;
 use diesel::{migration::RunMigrationsError, r2d2};
 use migrations_internals::MigrationError;
 
-pub type DatabaseResult<T> = Result<T, DatabaseError>;
+pub type TestDatabaseResult<T> = Result<T, TestDatabaseError>;
 
-/// Errors that can occur while setting up or operating the test database.
+/// Errors that can occur while setting up or cleaning up test databases.
 #[derive(Debug)]
-pub enum DatabaseError {
+pub enum TestDatabaseError {
     RunMigrationsError(RunMigrationsError),
     MigrationError(MigrationError),
     PoolCreationError(r2d2::PoolError),
@@ -19,43 +19,43 @@ pub enum DatabaseError {
     ConnectionError(result::ConnectionError),
 }
 
-impl From<io::Error> for DatabaseError {
+impl From<io::Error> for TestDatabaseError {
     fn from(e: io::Error) -> Self {
         IoError(e)
     }
 }
 
-impl From<result::Error> for DatabaseError {
+impl From<result::Error> for TestDatabaseError {
     fn from(e: result::Error) -> Self {
         QueryError(e)
     }
 }
 
-impl From<result::ConnectionError> for DatabaseError {
+impl From<result::ConnectionError> for TestDatabaseError {
     fn from(e: result::ConnectionError) -> Self {
         ConnectionError(e)
     }
 }
 
-impl From<r2d2::PoolError> for DatabaseError {
+impl From<r2d2::PoolError> for TestDatabaseError {
     fn from(e: r2d2::PoolError) -> Self {
         PoolCreationError(e)
     }
 }
 
-impl From<RunMigrationsError> for DatabaseError {
+impl From<RunMigrationsError> for TestDatabaseError {
     fn from(e: RunMigrationsError) -> Self {
         RunMigrationsError(e)
     }
 }
 
-impl From<MigrationError> for DatabaseError {
+impl From<MigrationError> for TestDatabaseError {
     fn from(e: MigrationError) -> Self {
         MigrationError(e)
     }
 }
 
-impl Error for DatabaseError {
+impl Error for TestDatabaseError {
     fn description(&self) -> &str {
         match *self {
             RunMigrationsError(ref error) => error
@@ -86,13 +86,13 @@ impl Error for DatabaseError {
     }
 }
 
-impl fmt::Display for DatabaseError {
+impl fmt::Display for TestDatabaseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.description().fmt(f)
     }
 }
 
-impl PartialEq for DatabaseError {
+impl PartialEq for TestDatabaseError {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             //            (&CargoTomlNotFound, &CargoTomlNotFound) => true,

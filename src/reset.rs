@@ -1,7 +1,7 @@
 //! Functions for resetting the database and running migrations on it.
 
 use crate::{
-    database_error::{DatabaseError, DatabaseResult},
+    database_error::{TestDatabaseError, DatabaseResult},
     query_helper,
 };
 use diesel::{query_dsl::RunQueryDsl, Connection};
@@ -18,7 +18,7 @@ where
     query_helper::drop_database(database_name)
         .if_exists()
         .execute(admin_conn)
-        .map_err(DatabaseError::from)
+        .map_err(TestDatabaseError::from)
         .map(|_| ())
 }
 
@@ -29,7 +29,7 @@ where
 {
     query_helper::create_database(database_name)
         .execute(admin_conn)
-        .map_err(DatabaseError::from)
+        .map_err(TestDatabaseError::from)
         .map(|_| ())
 }
 
@@ -38,7 +38,7 @@ where
 /// # Note
 /// The connection used here should be different from the admin connection used for resetting the database.
 /// Instead, the connection should be to the database on which tests will be performed on.
-pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path) -> Result<(), DatabaseError>
+pub fn run_migrations<T>(normal_conn: &T, migrations_directory: &Path) -> Result<(), TestDatabaseError>
 where
     T: MigrationConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
@@ -48,5 +48,5 @@ where
         migrations_directory,
         &mut ::std::io::sink(),
     )
-    .map_err(DatabaseError::from)
+    .map_err(TestDatabaseError::from)
 }
