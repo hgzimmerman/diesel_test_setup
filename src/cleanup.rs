@@ -1,9 +1,9 @@
 use crate::reset::drop_database;
 use diesel::Connection;
 
-/// Cleanup wrapper.
-/// Contains the admin connection and the name of the database (not the whole url).
+/// Drops test databases when it exits scope.
 ///
+/// Contains the admin connection and the name of the database.
 /// When this struct goes out of scope, it will use the data it owns to drop the database it's
 /// associated with.
 pub struct Cleanup<Conn>(pub(crate) Conn, pub(crate) String)
