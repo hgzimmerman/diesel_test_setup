@@ -1,8 +1,8 @@
 use crate::{Cleanup, Pool};
 use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::PooledConnection;
 use migrations_internals::MigrationConnection;
 use std::ops::Deref;
-use diesel::r2d2::PooledConnection;
 
 /// A struct that enforces drop order for a pool and the cleanup routine.
 #[derive(Debug)]

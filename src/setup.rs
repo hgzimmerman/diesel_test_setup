@@ -212,8 +212,8 @@ pub(crate) mod test {
     use super::*;
     use crate::reset::drop_database;
     use crate::test_util::database_exists;
-    use diesel::{Connection, PgConnection};
     use crate::Pool;
+    use diesel::{Connection, PgConnection};
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.

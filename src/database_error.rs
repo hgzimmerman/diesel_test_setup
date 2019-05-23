@@ -1,4 +1,5 @@
 use diesel::result;
+use diesel::result::DatabaseErrorKind;
 
 use std::{convert::From, error::Error, fmt, io};
 
@@ -12,6 +13,7 @@ pub type TestDatabaseResult<T> = Result<T, TestDatabaseError>;
 #[derive(Debug)]
 pub enum TestDatabaseError {
     RunMigrationsError(RunMigrationsError),
+    CleanupDroppedFirst,
     MigrationError(MigrationError),
     PoolCreationError(r2d2::PoolError),
     IoError(io::Error),
@@ -27,7 +29,16 @@ impl From<io::Error> for TestDatabaseError {
 
 impl From<result::Error> for TestDatabaseError {
     fn from(e: result::Error) -> Self {
-        QueryError(e)
+        // The assumption is made that only these "database still in use" errors will
+        // be thrown by this library.
+        //
+        // This is also a likely place for breakage if another enum variant is created for this
+        // specific error kind.
+        if let result::Error::DatabaseError(DatabaseErrorKind::__Unknown, _) = e {
+            CleanupDroppedFirst
+        } else {
+            QueryError(e)
+        }
     }
 }
 
@@ -62,6 +73,7 @@ impl Error for TestDatabaseError {
                 .source()
                 .map(Error::description)
                 .unwrap_or_else(|| error.description()),
+            CleanupDroppedFirst => "The Cleanup struct dropped while another connection was still open. Consider using std::mem::drop to drop the pool or connection before the Cleanup struct exits scope.",
             MigrationError(ref error) => error
                 .source()
                 .map(Error::description)
