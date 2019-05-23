@@ -4,7 +4,7 @@ use migrations_internals::MigrationConnection;
 use std::ops::Deref;
 use diesel::r2d2::PooledConnection;
 
-/// A struct that enforces drop order for the pool and the cleanup routine.
+/// A struct that enforces drop order for a pool and the cleanup routine.
 #[derive(Debug)]
 pub struct EphemeralDatabasePool<Conn>
 where
@@ -45,7 +45,7 @@ where
     }
 }
 
-/// A struct that enforces drop order for the connection and the cleanup routine.
+/// A struct that enforces drop order for a single connection and the cleanup routine.
 #[derive(Debug)]
 pub struct EphemeralDatabaseConnection<Conn>
 where

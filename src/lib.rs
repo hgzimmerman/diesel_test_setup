@@ -1,6 +1,6 @@
 //! Provides functions for setting up unique databases that are automatically dropped when tests finish.
 //!
-//! # Example
+//! # Examples
 //!
 //! `pool` is connected to a new database instance set up as if you had ran `diesel migration run` on it.
 //!
@@ -32,6 +32,48 @@
 //!    // Perform your test using `pool`
 //!}
 //! ```
+//!
+//! --------
+//!
+//! This function could have the same signature as one that sets up a Fake database,
+//! allowing easily swapping between them depending on if you want to run integration tests
+//! or unit tests.
+//!
+//! This need for running the test within a closure instead of just returning only a `Pool`
+//! is motivated by the requirement to keep the `Cleanup` struct around so it doesn't go out
+//! of scope first, while keeping the function signature the same as if you were working with a
+//! `Fake` database.
+//!```
+//!# use diesel::PgConnection;
+//!# use diesel::Connection;
+//!# use diesel_test_setup::{TestDatabaseBuilder};
+//!# use diesel::r2d2::ConnectionManager;
+//!# use diesel::r2d2::Pool;
+//!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
+//!# pub struct SomeFakeTestDouble;
+//!pub enum DatabaseOrFake {
+//!    Pool(Pool<ConnectionManager<PgConnection>>),
+//!    Fake(SomeFakeTestDouble),
+//!}
+//!
+//!pub fn execute_test_with_pool<Fun>(mut test_function: Fun)
+//!where
+//!    Fun: FnMut(DatabaseOrFake),
+//!{
+//!   let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
+//!   let (pool, _cleanup) = TestDatabaseBuilder::new(
+//!       admin_conn,
+//!       "postgres://localhost",
+//!   )
+//!       .db_name_prefix("test")
+//!       .setup_pool()
+//!       .expect("Could not setup the database.")
+//!       .into_tuple();
+//!
+//!    test_function(DatabaseOrFake::Pool(pool));
+//!}
+//! ```
+
 
 #[cfg(test)]
 #[macro_use]
