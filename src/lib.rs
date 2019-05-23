@@ -56,7 +56,7 @@
 //!    Fake(FakeTestDouble),
 //!}
 //!
-//!pub fn execute_test_with_pool<Fun>(mut test_function: Fun)
+//!pub fn execute_test_with_pool<Fun>(test_function: Fun)
 //!where
 //!    Fun: Fn(DatabaseOrFake),
 //!{
