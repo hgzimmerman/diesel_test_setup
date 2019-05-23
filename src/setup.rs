@@ -1,5 +1,5 @@
 use crate::connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
-use crate::{cleanup::Cleanup, database_error::TestDatabaseError, reset::run_migrations};
+use crate::{cleanup::Cleanup, database_error::TestDatabaseError, primitives::run_migrations};
 use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::find_migrations_directory;
 use migrations_internals::MigrationConnection;
@@ -167,7 +167,7 @@ where
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     // This makes the assumption that the provided database name does not already exist on the system.
-    crate::reset::create_database(&admin_conn, &db_name)?;
+    crate::primitives::create_database(&admin_conn, &db_name)?;
 
     let url = format!("{}/{}", database_origin, db_name); // TODO this may only work with postgres
     let manager = ConnectionManager::<Conn>::new(url);
@@ -193,7 +193,7 @@ where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
-    crate::reset::create_database(&admin_conn, &db_name)?;
+    crate::primitives::create_database(&admin_conn, &db_name)?;
 
     let url = format!("{}/{}", database_origin, db_name); // TODO this may only work with Postgres
     let connection = Conn::establish(&url)?;

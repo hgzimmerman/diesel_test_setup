@@ -1,4 +1,4 @@
-use crate::reset::drop_database;
+use crate::primitives::drop_database;
 use diesel::Connection;
 
 /// Drops test databases when it exits scope.

@@ -1,4 +1,4 @@
-//! Functions for resetting the database and running migrations on it.
+//! Primitives functions on which the higher abstractions in the crate are built on.
 
 use crate::{
     database_error::{TestDatabaseError, TestDatabaseResult},
@@ -10,6 +10,10 @@ use migrations_internals::MigrationConnection;
 use std::path::Path;
 
 /// Drops the database, completely removing every table (and therefore every row) in the database.
+///
+/// # Arguments
+/// * `admin_conn` - Admin connection to the database.
+/// * `database_name` - The name of the database to be deleted.
 pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>
 where
     T: Connection,
@@ -22,6 +26,12 @@ where
         .map(|_| ())
 }
 
+
+/// Creates a database with a given name.
+///
+/// # Arguments
+/// * `admin_conn` - Admin connection to the database.
+/// * `database_name` - The name of the new database to be created.
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>
 where
     T: Connection,
@@ -34,6 +44,10 @@ where
 }
 
 /// Creates tables in the database.
+///
+/// # Arguments
+/// * `normal_conn` - Non-admin connection to the database.
+/// * `migrations_directory` - Directory to the migrations directory.
 ///
 /// # Note
 /// The connection used here should be different from the admin connection used for resetting the database.

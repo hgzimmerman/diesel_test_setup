@@ -86,7 +86,7 @@ mod cleanup;
 mod connection_wrapper;
 mod database_error;
 mod query_helper;
-mod reset;
+pub mod primitives;
 mod setup;
 #[cfg(test)]
 mod test_util;
