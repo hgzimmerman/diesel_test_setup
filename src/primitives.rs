@@ -1,4 +1,4 @@
-//! Primitives functions on which the higher abstractions in the crate are built on.
+//! Primitive functions on which the higher abstractions in the crate are built upon.
 
 use crate::{
     database_error::{TestDatabaseError, TestDatabaseResult},
@@ -9,7 +9,7 @@ use migrations_internals as migrations;
 use migrations_internals::MigrationConnection;
 use std::path::Path;
 
-/// Drops the database, completely removing every table (and therefore every row) in the database.
+/// Drops the database.
 ///
 /// # Arguments
 /// * `admin_conn` - Admin connection to the database.
@@ -43,7 +43,7 @@ where
         .map(|_| ())
 }
 
-/// Creates tables in the database.
+/// Creates tables in the database based on scripts in the diesel 'migrations' directory.
 ///
 /// # Arguments
 /// * `normal_conn` - Non-admin connection to the database.

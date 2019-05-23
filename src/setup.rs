@@ -44,7 +44,7 @@ where
     ///
     /// # Notes
     /// * The `admin_conn` should have been created with the same origin present in `database_origin`.
-    /// * The `database_origin` should NOT have a trailing `/`.
+    /// * The `database_origin` should NOT have a trailing '/'.
     pub fn new(admin_conn: Conn, database_origin: &'a str) -> Self {
         TestDatabaseBuilder {
             admin_conn,
