@@ -30,7 +30,7 @@ impl From<io::Error> for TestDatabaseError {
 impl From<result::Error> for TestDatabaseError {
     fn from(e: result::Error) -> Self {
         // The assumption is made that only these "database still in use" errors will
-        // be thrown by this library.
+        // be thrown by this library under the __Unknown variant.
         //
         // This is also a likely place for breakage if another enum variant is created for this
         // specific error kind.
@@ -101,14 +101,5 @@ impl Error for TestDatabaseError {
 impl fmt::Display for TestDatabaseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.description().fmt(f)
-    }
-}
-
-impl PartialEq for TestDatabaseError {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            //            (&CargoTomlNotFound, &CargoTomlNotFound) => true,
-            _ => false,
-        }
     }
 }
