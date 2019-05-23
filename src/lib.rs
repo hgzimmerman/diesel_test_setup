@@ -39,7 +39,7 @@
 //! allowing easily swapping between them depending on if you want to run integration tests
 //! or unit tests.
 //!
-//! This need for running the test within a closure instead of just returning only a `Pool`
+//! Running the test within a `Fn` instead of just returning only a `Pool`
 //! is motivated by the requirement to keep the `Cleanup` struct around so it doesn't go out
 //! of scope first, while keeping the function signature the same as if you were working with a
 //! `Fake` database.
@@ -50,15 +50,15 @@
 //!# use diesel::r2d2::ConnectionManager;
 //!# use diesel::r2d2::Pool;
 //!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
-//!# pub struct SomeFakeTestDouble;
+//!# pub struct FakeTestDouble;
 //!pub enum DatabaseOrFake {
 //!    Pool(Pool<ConnectionManager<PgConnection>>),
-//!    Fake(SomeFakeTestDouble),
+//!    Fake(FakeTestDouble),
 //!}
 //!
 //!pub fn execute_test_with_pool<Fun>(mut test_function: Fun)
 //!where
-//!    Fun: FnMut(DatabaseOrFake),
+//!    Fun: Fn(DatabaseOrFake),
 //!{
 //!   let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
 //!   let (pool, _cleanup) = TestDatabaseBuilder::new(

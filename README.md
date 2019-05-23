@@ -12,14 +12,15 @@ use diesel_test_setup::TestDatabaseBuilder;
 {
     let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
     const DATABASE_ORIGIN: &str = "postgres://localhost";
-    let (_cleanup, pool) = TestDatabaseBuilder::new(
+    let pool: EphemeralDatabasePool<PgConnection> = TestDatabaseBuilder::new(
         admin_conn,
         DATABASE_ORIGIN
     )
     .setup_pool()
     .expect("Could not create the database.");
 
-    // Perform your test using pool
+    let pool: &Pool<ConnectionManager<PgConnection>> = pool.deref();
+    // Perform your test using the reference to a Pool
 }
 
 // Database has been cleaned up.
