@@ -6,6 +6,15 @@ use diesel::Connection;
 /// Contains the admin connection and the name of the database.
 /// When this struct goes out of scope, it will use the data it owns to drop the database it's
 /// associated with.
+///
+/// # Warning
+/// ### When dealing with tuple of type `(Conn, Cleanup)` or `(Pool, Cleanup)`
+/// * Proper database cleanup requires that `Cleanup` is dropped _after_ the connection.
+/// * Failure to assign the connection out of the tuple returned from this function will cause the
+/// `Cleanup` struct to be dropped first.
+/// If `Cleanup` drops first, an error indicating that the database is still in use will be thrown
+/// and the database will not be dropped, polluting your RDBMS namespace with test databases.
+#[derive(Debug)]
 pub struct Cleanup<Conn>(pub(crate) Conn, pub(crate) String)
 where
     Conn: Connection,

@@ -10,18 +10,24 @@
 //!# use ::diesel_test_setup::Cleanup;
 //!# use diesel::PgConnection;
 //!# use diesel::Connection;
-//!use diesel_test_setup::TestDatabaseBuilder;
+//!use diesel_test_setup::{TestDatabaseBuilder, EphemeralDatabasePool};
+//!# use diesel::r2d2::Pool;
+//!# use diesel::r2d2::ConnectionManager;
+//!# use std::ops::Deref;
 //!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
 //!
 //!{
 //!    let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
 //!    const DATABASE_ORIGIN: &str = "postgres://localhost";
-//!    let (_cleanup, pool) = TestDatabaseBuilder::new(
+//!    let pool: EphemeralDatabasePool<PgConnection> = TestDatabaseBuilder::new(
 //!        admin_conn,
 //!        DATABASE_ORIGIN
 //!    )
 //!    .setup_pool()
 //!    .expect("Could not create the database.");
+//!
+//!    let pool: &Pool<ConnectionManager<PgConnection>> = pool.deref();
+//!
 //!
 //!    // Perform your test using `pool`
 //!}
@@ -36,6 +42,7 @@ extern crate diesel;
 extern crate migrations_internals;
 
 mod cleanup;
+mod connection_wrapper;
 mod database_error;
 mod query_helper;
 mod reset;
@@ -43,6 +50,12 @@ mod setup;
 #[cfg(test)]
 mod test_util;
 
-pub use database_error::{TestDatabaseError, TestDatabaseResult};
 pub use cleanup::Cleanup;
+pub use connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
+pub use database_error::{TestDatabaseError, TestDatabaseResult};
 pub use setup::TestDatabaseBuilder;
+
+use diesel::r2d2;
+use diesel::r2d2::ConnectionManager;
+
+type Pool<Conn> = r2d2::Pool<ConnectionManager<Conn>>;

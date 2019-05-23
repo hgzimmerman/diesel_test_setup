@@ -1,3 +1,4 @@
+use crate::connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
 use crate::{cleanup::Cleanup, database_error::TestDatabaseError, reset::run_migrations};
 use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::find_migrations_directory;
@@ -6,6 +7,7 @@ use r2d2::PooledConnection;
 use std::path::PathBuf;
 use std::{ops::Deref, path::Path};
 
+/// Encapsulates the different ways databases can be named.
 #[derive(Debug)]
 enum DatabaseNameOption {
     Random,
@@ -103,11 +105,7 @@ where
     /// * If you don't specify the migrations directory, the migrations directory must be at the root
     /// of your project in order for this function to operate as expected.
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
-    /// * The `Pool` _must_ be dropped first. If `Cleanup` drops first instead,
-    /// then it will complain that the database is still in use and the database will not be dropped.
-    pub fn setup_pool(
-        self,
-    ) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), TestDatabaseError> {
+    pub fn setup_pool(self) -> Result<EphemeralDatabasePool<Conn>, TestDatabaseError> {
         let migrations_directory: PathBuf = self
             .migrations_directory
             .map_or_else(|| find_migrations_directory(), Ok)?;
@@ -133,9 +131,7 @@ where
     /// * If you don't specify the migrations directory, the migrations directory must be at the root
     /// of your project in order for this function to operate as expected.
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
-    /// * The `Conn` _must_ be dropped first. If `Cleanup` drops first instead,
-    /// then it will complain that the database is still in use and the database will not be dropped.
-    pub fn setup_connection(self) -> Result<(Cleanup<Conn>, Conn), TestDatabaseError> {
+    pub fn setup_connection(self) -> Result<EphemeralDatabaseConnection<Conn>, TestDatabaseError> {
         let migrations_directory: PathBuf = self
             .migrations_directory
             .map_or_else(|| find_migrations_directory(), Ok)?;
@@ -164,7 +160,7 @@ fn setup_named_db_pool<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> Result<(Cleanup<Conn>, r2d2::Pool<ConnectionManager<Conn>>), TestDatabaseError>
+) -> Result<EphemeralDatabasePool<Conn>, TestDatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
@@ -181,7 +177,7 @@ where
     run_migrations(pool.get().unwrap().deref(), migrations_directory)?;
 
     let cleanup = Cleanup(admin_conn, db_name);
-    Ok((cleanup, pool))
+    Ok(EphemeralDatabasePool { cleanup, pool })
 }
 
 /// Utility function that creates a database with a known name and runs migrations on it.
@@ -192,20 +188,23 @@ fn setup_named_db<Conn>(
     database_origin: &str,
     migrations_directory: &Path,
     db_name: String,
-) -> Result<(Cleanup<Conn>, Conn), TestDatabaseError>
+) -> Result<EphemeralDatabaseConnection<Conn>, TestDatabaseError>
 where
     Conn: MigrationConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     crate::reset::create_database(&admin_conn, &db_name)?;
 
     let url = format!("{}/{}", database_origin, db_name); // TODO this may only work with Postgres
-    let conn = Conn::establish(&url)?;
+    let connection = Conn::establish(&url)?;
 
-    run_migrations(&conn, migrations_directory)?;
+    run_migrations(&connection, migrations_directory)?;
     let cleanup = Cleanup(admin_conn, db_name);
-    Ok((cleanup, conn))
+
+    Ok(EphemeralDatabaseConnection {
+        cleanup,
+        connection,
+    })
 }
 
 #[cfg(test)]
@@ -214,6 +213,7 @@ pub(crate) mod test {
     use crate::reset::drop_database;
     use crate::test_util::database_exists;
     use diesel::{Connection, PgConnection};
+    use crate::Pool;
 
     /// Should point to the base postgres account.
     /// One that has authority to create and destroy other database instances.
@@ -241,7 +241,7 @@ pub(crate) mod test {
         std::panic::catch_unwind(|| {
             let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
                 .expect("Should be able to connect to admin db");
-            let (_cleanup, _pool) = setup_named_db_pool(
+            let _ = setup_named_db_pool(
                 admin_conn,
                 url_origin,
                 Path::new("../migrations"),
@@ -269,7 +269,7 @@ pub(crate) mod test {
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");
 
-        let (cleanup, pool) = setup_named_db_pool(
+        let pool_and_cleanup = setup_named_db_pool(
             admin_conn,
             url_origin,
             Path::new("../migrations"),
@@ -284,11 +284,88 @@ pub(crate) mod test {
             database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
         assert!(db_exists);
 
-        std::mem::drop(pool);
-        std::mem::drop(cleanup);
+        std::mem::drop(pool_and_cleanup);
 
         let db_exists: bool =
             database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
         assert!(!db_exists)
+    }
+
+    #[test]
+    fn lack_of_assignment_still_allows_correct_drop_order() {
+        let url_origin = DATABASE_ORIGIN;
+        let db_name = "lack_of_assignment_still_allows_correct_drop_order_TEST".to_string();
+
+        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            .expect("Should be able to connect to admin db");
+        // precautionary drop
+        drop_database(&admin_conn, &db_name).expect("should drop");
+
+        setup_named_db_pool(
+            admin_conn,
+            url_origin,
+            Path::new("../migrations"),
+            db_name.clone(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn normal_assignment_allows_correct_drop_order() {
+        let url_origin = DATABASE_ORIGIN;
+        let db_name = "normal_assignment_allows_correct_drop_order_TEST".to_string();
+
+        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            .expect("Should be able to connect to admin db");
+        // precautionary drop
+        drop_database(&admin_conn, &db_name).expect("should drop");
+
+        let _pool_and_cleanup = setup_named_db_pool(
+            admin_conn,
+            url_origin,
+            Path::new("../migrations"),
+            db_name.clone(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn late_assignment_allows_correct_drop_order() {
+        let url_origin = DATABASE_ORIGIN;
+        let db_name = "late_assignment_allows_correct_drop_order_TEST".to_string();
+
+        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            .expect("Should be able to connect to admin db");
+        // precautionary drop
+        drop_database(&admin_conn, &db_name).expect("should drop");
+
+        let x = setup_named_db_pool(
+            admin_conn,
+            url_origin,
+            Path::new("../migrations"),
+            db_name.clone(),
+        )
+        .unwrap();
+        let _pool = x.pool;
+    }
+
+    #[test]
+    fn deref_out_of_function_maintains_correct_drop_order() {
+        let url_origin = DATABASE_ORIGIN;
+        let db_name = "deref_should_break_TEST".to_string();
+
+        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            .expect("Should be able to connect to admin db");
+        // precautionary drop
+        drop_database(&admin_conn, &db_name).expect("should drop");
+
+        let _: &Pool<PgConnection> = setup_named_db_pool(
+            admin_conn,
+            url_origin,
+            Path::new("../migrations"),
+            db_name.clone(),
+        )
+        .unwrap()
+        .deref();
     }
 }
