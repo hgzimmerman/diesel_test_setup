@@ -1,0 +1,47 @@
+version: "2"
+
+services:
+  rust:
+    image: rust:latest
+    volumes:
+      - ./:/usr/src/app
+      - registry:/root/.cargo/registry
+      - target-cache:/usr/src/app/target
+    links: # Links are deprecated, experiment in removing this line and still getting the whole thing to work.
+      - postgres_test
+      - mysql_test
+    environment:
+      TEST_DATABASE_ORIGIN: 'postgres://user:example@postgres_test:5432'
+      DROP_DATABASE_URL: 'postgres://user:example@postgres_test:5432/postgres'
+      MYSQL_DB_ORIGIN: 'mysql://root:password@mysql_test:3306/'
+      MYSQL_ADMIN_URL: 'mysql://root:password@mysql_test:3306/root'
+    working_dir: /usr/src/app
+
+
+  postgres_test:
+    image: "postgres:11"
+    container_name: postgres_test
+    ports: 
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data/pgdata
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_USER: user
+      POSTGRES_DB: diesel_test_setup
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+  mysql_test:
+    image: mysql
+    container_name: mysql_test
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+
+# cargo will try to redownload packages @ docker-compose up so store them here.
+volumes:
+  pgdata: {}
+  registry:
+    driver: local
+  target-cache:

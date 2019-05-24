@@ -14,19 +14,23 @@
 //!# use diesel::r2d2::Pool;
 //!# use diesel::r2d2::ConnectionManager;
 //!# use std::ops::Deref;
+//!# use std::path::PathBuf;
+//!# use std::str::FromStr;
 //!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
+//!# const DATABASE_ORIGIN: &str = env!("TEST_DATABASE_ORIGIN");
+//!# let migrations = PathBuf::from_str("test_assets/postgres/migrations").unwrap();
 //!
 //!{
 //!    let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
-//!    const DATABASE_ORIGIN: &str = "postgres://localhost";
 //!    let pool: EphemeralDatabasePool<PgConnection> = TestDatabaseBuilder::new(
 //!        admin_conn,
 //!        DATABASE_ORIGIN
 //!    )
+//!    .migrations_directory(migrations)
 //!    .setup_pool()
 //!    .expect("Could not create the database.");
 //!
-//!    let pool: &Pool<ConnectionManager<PgConnection>> = pool.deref();
+//!    let pool: &Pool<ConnectionManager<PgConnection>> = &*pool;
 //!
 //!
 //!    // Perform your test using `pool`
@@ -46,10 +50,13 @@
 //!```
 //!# use diesel::PgConnection;
 //!# use diesel::Connection;
-//!# use diesel_test_setup::{TestDatabaseBuilder};
+//!# use diesel_test_setup::TestDatabaseBuilder;
 //!# use diesel::r2d2::ConnectionManager;
 //!# use diesel::r2d2::Pool;
+//!# use std::path::PathBuf;
+//!# use std::str::FromStr;
 //!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
+//!# const DATABASE_ORIGIN: &str = env!("TEST_DATABASE_ORIGIN");
 //!# pub struct FakeTestDouble;
 //!pub enum DatabaseOrFake {
 //!    Pool(Pool<ConnectionManager<PgConnection>>),
@@ -60,18 +67,22 @@
 //!where
 //!    Fun: Fn(DatabaseOrFake),
 //!{
-//!   let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
-//!   let (pool, _cleanup) = TestDatabaseBuilder::new(
-//!       admin_conn,
-//!       "postgres://localhost",
-//!   )
-//!       .db_name_prefix("test")
-//!       .setup_pool()
-//!       .expect("Could not setup the database.")
-//!       .into_tuple();
+//!# let migrations = PathBuf::from_str("test_assets/postgres/migrations").unwrap();
+//!    let admin_conn = PgConnection::establish(ADMIN_DATABASE_URL).unwrap();
+//!    let (pool, _cleanup) = TestDatabaseBuilder::new(
+//!        admin_conn,
+//!        DATABASE_ORIGIN,
+//!    )
+//!        .db_name_prefix("test")
+//!        .migrations_directory(migrations)
+//!        .setup_pool()
+//!        .expect("Could not setup the database.")
+//!        .into_tuple();
 //!
 //!    test_function(DatabaseOrFake::Pool(pool));
 //!}
+//!
+//!# execute_test_with_pool(|pool| {});
 //! ```
 
 #[cfg(test)]

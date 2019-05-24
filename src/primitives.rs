@@ -12,6 +12,7 @@ use std::path::Path;
 /// Drops the database.
 ///
 /// # Arguments
+///
 /// * `admin_conn` - Admin connection to the database.
 /// * `database_name` - The name of the database to be deleted.
 pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>
@@ -30,6 +31,7 @@ where
 /// Creates a database with a given name.
 ///
 /// # Arguments
+///
 /// * `admin_conn` - Admin connection to the database.
 /// * `database_name` - The name of the new database to be created.
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>

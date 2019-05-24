@@ -38,11 +38,13 @@ where
     /// Creates a new builder.
     ///
     /// # Arguments
+    ///
     /// * `admin_conn` - Admin connection used for creating and dropping databases.
     /// * `database_origin` - The scheme and authority of the database that will be created.
     /// The name will be appended to this to create the URL that connects to the new database.
     ///
     /// # Notes
+    ///
     /// * The `admin_conn` should have been created with the same origin present in `database_origin`.
     /// * The `database_origin` should NOT have a trailing '/'.
     pub fn new(admin_conn: Conn, database_origin: &'a str) -> Self {
@@ -61,10 +63,12 @@ where
     /// your current directory.
     ///
     /// # Arguments
+    ///
     /// * `directory` - The directory where the migrations are found.
     /// This should point to the automatically created 'migrations' directory per Diesel's expectations.
     ///
     /// # Notes
+    ///
     /// * If migrations can't be found, then attempting to run `setup_pool` or `setup_connection` will return an error.
     pub fn migrations_directory(mut self, directory: PathBuf) -> Self {
         self.migrations_directory = Some(directory);
@@ -92,6 +96,7 @@ where
     /// * `prefix` - The prefix to the random database name.
     ///
     /// # Notes
+    ///
     /// * If you provide your own database name, then it is expected to be url-safe (no spaces, url-unsafe characters).
     /// * This will overwrite any configuration made using `db_name`.
     pub fn db_name_prefix<T: Into<String>>(mut self, prefix: T) -> Self {
@@ -102,6 +107,7 @@ where
     /// Creates a new database, runs migrations on it, and returns a `Pool` connected to it.
     ///
     /// # Notes
+    ///
     /// * If you don't specify the migrations directory, the migrations directory must be at the root
     /// of your project in order for this function to operate as expected.
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
@@ -120,7 +126,7 @@ where
         setup_named_db_pool(
             self.admin_conn,
             self.database_origin,
-            migrations_directory.deref(),
+            &*migrations_directory,
             db_name,
         )
     }
@@ -128,6 +134,7 @@ where
     /// Creates a new database, runs migrations on it, and returns a `Connection` connected to it.
     ///
     /// # Notes
+    ///
     /// * If you don't specify the migrations directory, the migrations directory must be at the root
     /// of your project in order for this function to operate as expected.
     /// Failure to locate your migrations directory there will prevent this function from finding the migrations directory.
@@ -210,7 +217,7 @@ where
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use crate::reset::drop_database;
+    use crate::primitives::drop_database;
     use crate::test_util::database_exists;
     use crate::Pool;
     use diesel::{Connection, PgConnection};
@@ -244,7 +251,7 @@ pub(crate) mod test {
             let _ = setup_named_db_pool(
                 admin_conn,
                 url_origin,
-                Path::new("../migrations"),
+                Path::new("test_assets/postgres/migrations"),
                 db_name.clone(),
             )
             .expect("create db");
@@ -272,7 +279,7 @@ pub(crate) mod test {
         let pool_and_cleanup = setup_named_db_pool(
             admin_conn,
             url_origin,
-            Path::new("../migrations"),
+            Path::new("test_assets/postgres/migrations"),
             db_name.clone(),
         )
         .unwrap();
@@ -304,7 +311,7 @@ pub(crate) mod test {
         setup_named_db_pool(
             admin_conn,
             url_origin,
-            Path::new("../migrations"),
+            Path::new("test_assets/postgres/migrations"),
             db_name.clone(),
         )
         .unwrap();
@@ -323,7 +330,7 @@ pub(crate) mod test {
         let _pool_and_cleanup = setup_named_db_pool(
             admin_conn,
             url_origin,
-            Path::new("../migrations"),
+            Path::new("test_assets/postgres/migrations"),
             db_name.clone(),
         )
         .unwrap();
@@ -342,7 +349,7 @@ pub(crate) mod test {
         let x = setup_named_db_pool(
             admin_conn,
             url_origin,
-            Path::new("../migrations"),
+            Path::new("test_assets/postgres/migrations"),
             db_name.clone(),
         )
         .unwrap();
@@ -362,7 +369,7 @@ pub(crate) mod test {
         let _: &Pool<PgConnection> = setup_named_db_pool(
             admin_conn,
             url_origin,
-            Path::new("../migrations"),
+            Path::new("test_assets/postgres/migrations"),
             db_name.clone(),
         )
         .unwrap()
