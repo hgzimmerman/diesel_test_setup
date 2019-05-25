@@ -13,8 +13,8 @@ services:
     environment:
       POSTGRES_DB_ORIGIN: 'postgres://user:example@postgres_test:5432'
       POSTGRES_ADMIN_URL: 'postgres://user:example@postgres_test:5432/postgres'
-      MYSQL_DB_ORIGIN: 'mysql://root:password@mysql_test:3306/'
-      MYSQL_ADMIN_URL: 'mysql://root:password@mysql_test:3306/root'
+      MYSQL_DB_ORIGIN: 'mysql://root:password@mysql_test:3306'
+      MYSQL_ADMIN_URL: 'mysql://root:password@mysql_test:3306'
     working_dir: /usr/src/app
 
 
@@ -32,12 +32,14 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
 
   mysql_test:
-    image: mysql
+    image: mysql:8
     container_name: mysql_test
     ports:
       - 3306:3306
     environment:
       MYSQL_ROOT_PASSWORD: "password"
+#      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   pgdata: {}

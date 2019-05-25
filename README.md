@@ -27,14 +27,12 @@ use diesel_test_setup::TestDatabaseBuilder;
 ```
 
 ### Testing
-Currently, tests only cover PostgreSql, and rely on environment configurations that are external to this project.
-For those reasons, you shouldn't expect tests to run out-of-the-box.
-Some effort is being directed towards setting up a testing environment using Docker so that both PostgreSql and MySql can be tested.
+The tests expect Postgres and MySql to be running and for specific environment variables to be set up before running.
+Tests are intended to be ran using Docker with the following command `docker-compose run cargo test`.
 
 
 ### Features
 * Supports PostgreSql and MySql.
-  * MySql is untested, although it should just work.
 * Both `r2d2::Pool`s and `diesel::Connection`s are supported.
 * Automatic destruction of test databases.
 

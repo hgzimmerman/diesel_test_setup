@@ -1,4 +1,3 @@
 CREATE TABLE test_user (
-   `id` int NOT NULL AUTO_INCREMENT,
+   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY
 );
-

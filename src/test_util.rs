@@ -3,6 +3,20 @@ use diesel::{
     QueryDsl, QueryResult,
 };
 
+/// Should point to the base postgres account.
+/// One that has authority to create and destroy other database instances.
+///
+/// It is expected to be on the same database server as the one indicated by DATABASE_ORIGIN.
+pub const POSTGRES_ADMIN_URL: &str = env!("POSTGRES_ADMIN_URL");
+/// The origin (scheme, user, password, address, port) of the test database.
+///
+/// This determines which database server is connected to, but allows for specification of
+/// a specific database instance within the server to connect to and run tests with.
+pub const POSTGRES_ORIGIN: &str = env!("POSTGRES_DB_ORIGIN");
+
+pub const MYSQL_ADMIN_URL: &str = env!("MYSQL_ADMIN_URL");
+pub const MYSQL_ORIGIN: &str = env!("MYSQL_DB_ORIGIN");
+
 table! {
     pg_database (datname) {
         datname -> Text,
@@ -45,7 +59,6 @@ pub fn is_superuser(conn: &PgConnection) -> QueryResult<bool> {
 
 mod test {
     use super::*;
-    use crate::setup::test::POSTGRES_ADMIN_URL;
     use diesel::Connection;
 
     #[test]

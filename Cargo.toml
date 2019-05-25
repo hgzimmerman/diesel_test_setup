@@ -16,7 +16,7 @@ nanoid = "0.2.0"
 
 [dev-dependencies]
 # Postgres is required for tests, but not for the library itself
-diesel = { version = "1.4.2", features = ["postgres", "r2d2"] }
+diesel = { version = "1.4.2", features = ["postgres", "mysql", "r2d2"] }
 
 
 [badges]

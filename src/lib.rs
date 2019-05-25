@@ -101,6 +101,8 @@ pub mod primitives;
 mod setup;
 #[cfg(test)]
 mod test_util;
+#[cfg(test)]
+pub(crate) mod test;
 
 pub use cleanup::Cleanup;
 pub use connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
