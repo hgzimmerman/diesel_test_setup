@@ -109,7 +109,17 @@ pub use connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool}
 pub use database_error::{TestDatabaseError, TestDatabaseResult};
 pub use setup::TestDatabaseBuilder;
 
-use diesel::r2d2;
+use diesel::{r2d2, PgConnection, MysqlConnection, Connection};
 use diesel::r2d2::ConnectionManager;
 
 type Pool<Conn> = r2d2::Pool<ConnectionManager<Conn>>;
+
+
+/// A sealed trait that indicates that `Connection` it is implemented for is connected to via a URL, and not a file.
+///
+/// It is used to exclude Sqlite from this library.
+pub trait RemoteConnection: Connection {}
+
+impl RemoteConnection for PgConnection {}
+impl RemoteConnection for MysqlConnection {}
+

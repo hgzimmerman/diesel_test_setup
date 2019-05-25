@@ -1,5 +1,5 @@
 use crate::connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
-use crate::{cleanup::Cleanup, database_error::TestDatabaseError, primitives::run_migrations};
+use crate::{cleanup::Cleanup, database_error::TestDatabaseError, primitives::run_migrations, RemoteConnection};
 use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::find_migrations_directory;
 use migrations_internals::MigrationConnection;
@@ -31,7 +31,7 @@ pub struct TestDatabaseBuilder<'a, Conn> {
 
 impl<'a, Conn> TestDatabaseBuilder<'a, Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
@@ -169,14 +169,14 @@ pub (crate) fn setup_named_db_pool<Conn>(
     db_name: String,
 ) -> Result<EphemeralDatabasePool<Conn>, TestDatabaseError>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
     // This makes the assumption that the provided database name does not already exist on the system.
     crate::primitives::create_database(&admin_conn, &db_name)?;
 
-    let url = format!("{}/{}", database_origin, db_name); // TODO this may only work with postgres
+    let url = format!("{}/{}", database_origin, db_name);
     let manager = ConnectionManager::<Conn>::new(url);
 
     let pool = r2d2::Pool::builder().max_size(3).build(manager)?;
@@ -197,7 +197,7 @@ fn setup_named_db<Conn>(
     db_name: String,
 ) -> Result<EphemeralDatabaseConnection<Conn>, TestDatabaseError>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     crate::primitives::create_database(&admin_conn, &db_name)?;
@@ -212,9 +212,4 @@ where
         cleanup,
         connection,
     })
-}
-
-#[cfg(test)]
-pub(crate) mod test {
-
 }

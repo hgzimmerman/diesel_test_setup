@@ -1,5 +1,5 @@
 use crate::primitives::drop_database;
-use diesel::Connection;
+use crate::RemoteConnection;
 
 /// Drops test databases when it exits scope.
 ///
@@ -17,12 +17,12 @@ use diesel::Connection;
 #[derive(Debug)]
 pub struct Cleanup<Conn>(pub(crate) Conn, pub(crate) String)
 where
-    Conn: Connection,
+    Conn: RemoteConnection,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword;
 
 impl<Conn> Drop for Cleanup<Conn>
 where
-    Conn: Connection,
+    Conn: RemoteConnection,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     fn drop(&mut self) {

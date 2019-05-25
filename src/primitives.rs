@@ -1,9 +1,6 @@
 //! Primitive functions on which the higher abstractions in the crate are built upon.
 
-use crate::{
-    database_error::{TestDatabaseError, TestDatabaseResult},
-    query_helper,
-};
+use crate::{database_error::{TestDatabaseError, TestDatabaseResult}, query_helper, RemoteConnection};
 use diesel::{query_dsl::RunQueryDsl, Connection};
 use migrations_internals as migrations;
 use migrations_internals::MigrationConnection;
@@ -17,7 +14,7 @@ use std::path::Path;
 /// * `database_name` - The name of the database to be deleted.
 pub fn drop_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>
 where
-    T: Connection,
+    T: RemoteConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     query_helper::drop_database(database_name)
@@ -36,7 +33,7 @@ where
 /// * `database_name` - The name of the new database to be created.
 pub fn create_database<T>(admin_conn: &T, database_name: &str) -> TestDatabaseResult<()>
 where
-    T: Connection,
+    T: RemoteConnection,
     <T as Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     query_helper::create_database(database_name)

@@ -11,12 +11,10 @@ keywords = ["diesel", "integration", "testing"]
 [dependencies]
 migrations_internals = "1.4.0"
 lazy_static = "1.3.0"
-diesel = { version = "1.4.2", features = ["r2d2"] }
+#diesel = { version = "1.4.2", features = ["r2d2"] }
+diesel = { version = "1.4.2", features = ["postgres", "mysql", "r2d2"] }
 nanoid = "0.2.0"
 
-[dev-dependencies]
-# Postgres is required for tests, but not for the library itself
-diesel = { version = "1.4.2", features = ["postgres", "mysql", "r2d2"] }
 
 
 [badges]

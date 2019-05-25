@@ -1,4 +1,4 @@
-use crate::{Cleanup, Pool};
+use crate::{Cleanup, Pool, RemoteConnection};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use migrations_internals::MigrationConnection;
@@ -8,7 +8,7 @@ use std::ops::Deref;
 #[derive(Debug)]
 pub struct EphemeralDatabasePool<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
@@ -18,7 +18,7 @@ where
 
 impl<Conn> EphemeralDatabasePool<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
@@ -34,7 +34,7 @@ where
 
 impl<Conn> Deref for EphemeralDatabasePool<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
@@ -49,7 +49,7 @@ where
 #[derive(Debug)]
 pub struct EphemeralDatabaseConnection<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     pub(crate) connection: Conn,       // should drop first
@@ -58,7 +58,7 @@ where
 
 impl<Conn> EphemeralDatabaseConnection<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
 {
     /// Converts the struct into a tuple.
@@ -73,7 +73,7 @@ where
 
 impl<Conn> Deref for EphemeralDatabaseConnection<Conn>
 where
-    Conn: MigrationConnection + 'static,
+    Conn: MigrationConnection + RemoteConnection + 'static,
     <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
     PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
 {
