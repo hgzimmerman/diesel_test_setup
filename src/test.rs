@@ -1,11 +1,12 @@
-use crate::setup::*;
 use crate::primitives::drop_database;
-use crate::test_util::{database_exists, POSTGRES_ORIGIN, POSTGRES_ADMIN_URL, MYSQL_ORIGIN, MYSQL_ADMIN_URL};
+use crate::setup::*;
+use crate::test_util::{
+    database_exists, MYSQL_ADMIN_URL, MYSQL_ORIGIN, POSTGRES_ADMIN_URL, POSTGRES_ORIGIN,
+};
 use crate::Pool;
-use diesel::{Connection, PgConnection, MysqlConnection};
-use std::path::Path;
+use diesel::{Connection, MysqlConnection, PgConnection};
 use std::ops::Deref;
-
+use std::path::Path;
 
 #[test]
 fn cleanup_drops_db_after_panic() {
@@ -33,8 +34,8 @@ fn cleanup_drops_db_after_panic() {
     })
     .expect_err("Should catch panic.");
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     let database_exists: bool =
         database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
     assert!(!database_exists)
@@ -45,8 +46,8 @@ fn cleanup_drops_database() {
     let url_origin = POSTGRES_ORIGIN;
     let db_name = "cleanup_drops_database_TEST_DB".to_string();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     // precautionary drop
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -58,8 +59,8 @@ fn cleanup_drops_database() {
     )
     .unwrap();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
 
     let db_exists: bool =
         database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
@@ -77,8 +78,8 @@ fn lack_of_assignment_still_allows_correct_drop_order() {
     let url_origin = POSTGRES_ORIGIN;
     let db_name = "lack_of_assignment_still_allows_correct_drop_order_TEST".to_string();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     // precautionary drop
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -96,8 +97,8 @@ fn normal_assignment_allows_correct_drop_order() {
     let url_origin = POSTGRES_ORIGIN;
     let db_name = "normal_assignment_allows_correct_drop_order_TEST".to_string();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     // precautionary drop
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -115,8 +116,8 @@ fn late_assignment_allows_correct_drop_order() {
     let url_origin = POSTGRES_ORIGIN;
     let db_name = "late_assignment_allows_correct_drop_order_TEST".to_string();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     // precautionary drop
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -135,8 +136,8 @@ fn deref_out_of_function_maintains_correct_drop_order() {
     let url_origin = POSTGRES_ORIGIN;
     let db_name = "deref_should_break_TEST".to_string();
 
-    let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        PgConnection::establish(POSTGRES_ADMIN_URL).expect("Should be able to connect to admin db");
     // precautionary drop
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -146,18 +147,17 @@ fn deref_out_of_function_maintains_correct_drop_order() {
         Path::new("test_assets/postgres/migrations"),
         db_name.clone(),
     )
-        .unwrap()
-        .deref();
+    .unwrap()
+    .deref();
 }
-
 
 #[test]
 fn mysql() {
     let url_origin = MYSQL_ORIGIN;
     let db_name = "mysql_TEST".to_string();
 
-    let admin_conn = MysqlConnection::establish(MYSQL_ADMIN_URL)
-        .expect("Should be able to connect to admin db");
+    let admin_conn =
+        MysqlConnection::establish(MYSQL_ADMIN_URL).expect("Should be able to connect to admin db");
 
     drop_database(&admin_conn, &db_name).expect("should drop");
 
@@ -167,5 +167,5 @@ fn mysql() {
         Path::new("test_assets/mysql/migrations"),
         db_name.clone(),
     )
-        .unwrap();
+    .unwrap();
 }

@@ -1,5 +1,8 @@
 use crate::connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
-use crate::{cleanup::Cleanup, database_error::TestDatabaseError, primitives::run_migrations, RemoteConnection};
+use crate::{
+    cleanup::Cleanup, database_error::TestDatabaseError, primitives::run_migrations,
+    RemoteConnection,
+};
 use diesel::r2d2::{self, ConnectionManager};
 use migrations_internals::find_migrations_directory;
 use migrations_internals::MigrationConnection;
@@ -162,7 +165,7 @@ where
 /// Utility function that creates a database with a known name and runs migrations on it.
 ///
 /// Returns a Pool of connections.
-pub (crate) fn setup_named_db_pool<Conn>(
+pub(crate) fn setup_named_db_pool<Conn>(
     admin_conn: Conn,
     database_origin: &str,
     migrations_directory: &Path,

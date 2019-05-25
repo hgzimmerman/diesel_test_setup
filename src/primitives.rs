@@ -1,6 +1,9 @@
 //! Primitive functions on which the higher abstractions in the crate are built upon.
 
-use crate::{database_error::{TestDatabaseError, TestDatabaseResult}, query_helper, RemoteConnection};
+use crate::{
+    database_error::{TestDatabaseError, TestDatabaseResult},
+    query_helper, RemoteConnection,
+};
 use diesel::{query_dsl::RunQueryDsl, Connection};
 use migrations_internals as migrations;
 use migrations_internals::MigrationConnection;
@@ -23,7 +26,6 @@ where
         .map_err(TestDatabaseError::from)
         .map(|_| ())
 }
-
 
 /// Creates a database with a given name.
 ///

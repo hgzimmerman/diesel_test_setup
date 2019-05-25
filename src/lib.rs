@@ -96,24 +96,23 @@ extern crate migrations_internals;
 mod cleanup;
 mod connection_wrapper;
 mod database_error;
-mod query_helper;
 pub mod primitives;
+mod query_helper;
 mod setup;
 #[cfg(test)]
-mod test_util;
-#[cfg(test)]
 pub(crate) mod test;
+#[cfg(test)]
+mod test_util;
 
 pub use cleanup::Cleanup;
 pub use connection_wrapper::{EphemeralDatabaseConnection, EphemeralDatabasePool};
 pub use database_error::{TestDatabaseError, TestDatabaseResult};
 pub use setup::TestDatabaseBuilder;
 
-use diesel::{r2d2, PgConnection, MysqlConnection, Connection};
 use diesel::r2d2::ConnectionManager;
+use diesel::{r2d2, Connection, MysqlConnection, PgConnection};
 
 type Pool<Conn> = r2d2::Pool<ConnectionManager<Conn>>;
-
 
 /// A sealed trait that indicates that `Connection` it is implemented for is connected to via a URL, and not a file.
 ///
@@ -122,4 +121,3 @@ pub trait RemoteConnection: Connection {}
 
 impl RemoteConnection for PgConnection {}
 impl RemoteConnection for MysqlConnection {}
-
