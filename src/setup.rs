@@ -226,27 +226,27 @@ pub(crate) mod test {
     /// One that has authority to create and destroy other database instances.
     ///
     /// It is expected to be on the same database server as the one indicated by DATABASE_ORIGIN.
-    pub(crate) const DROP_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
+    pub(crate) const POSTGRES_ADMIN_URL: &str = env!("POSTGRES_ADMIN_URL");
     /// The origin (scheme, user, password, address, port) of the test database.
     ///
     /// This determines which database server is connected to, but allows for specification of
     /// a specific database instance within the server to connect to and run tests with.
-    const DATABASE_ORIGIN: &str = env!("TEST_DATABASE_ORIGIN");
+    const POSTGRES_ORIGIN: &str = env!("POSTGRES_DB_ORIGIN");
 
     #[test]
     fn cleanup_drops_db_after_panic() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "cleanup_drops_db_after_panic_TEST_DB".to_string();
 
         // Make sure that the db doesn't exist beforehand.
         {
-            let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
                 .expect("Should be able to connect to admin db");
             drop_database(&admin_conn, &db_name).expect("should drop");;
         }
 
         std::panic::catch_unwind(|| {
-            let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+            let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
                 .expect("Should be able to connect to admin db");
             let _ = setup_named_db_pool(
                 admin_conn,
@@ -259,7 +259,7 @@ pub(crate) mod test {
         })
         .expect_err("Should catch panic.");
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         let database_exists: bool =
             database_exists(&admin_conn, &db_name).expect("Should determine if database exists");
@@ -268,10 +268,10 @@ pub(crate) mod test {
 
     #[test]
     fn cleanup_drops_database() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "cleanup_drops_database_TEST_DB".to_string();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");
@@ -284,7 +284,7 @@ pub(crate) mod test {
         )
         .unwrap();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
 
         let db_exists: bool =
@@ -300,10 +300,10 @@ pub(crate) mod test {
 
     #[test]
     fn lack_of_assignment_still_allows_correct_drop_order() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "lack_of_assignment_still_allows_correct_drop_order_TEST".to_string();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");
@@ -319,10 +319,10 @@ pub(crate) mod test {
 
     #[test]
     fn normal_assignment_allows_correct_drop_order() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "normal_assignment_allows_correct_drop_order_TEST".to_string();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");
@@ -338,10 +338,10 @@ pub(crate) mod test {
 
     #[test]
     fn late_assignment_allows_correct_drop_order() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "late_assignment_allows_correct_drop_order_TEST".to_string();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");
@@ -358,10 +358,10 @@ pub(crate) mod test {
 
     #[test]
     fn deref_out_of_function_maintains_correct_drop_order() {
-        let url_origin = DATABASE_ORIGIN;
+        let url_origin = POSTGRES_ORIGIN;
         let db_name = "deref_should_break_TEST".to_string();
 
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         // precautionary drop
         drop_database(&admin_conn, &db_name).expect("should drop");

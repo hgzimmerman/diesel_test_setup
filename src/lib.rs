@@ -16,8 +16,8 @@
 //!# use std::ops::Deref;
 //!# use std::path::PathBuf;
 //!# use std::str::FromStr;
-//!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
-//!# const DATABASE_ORIGIN: &str = env!("TEST_DATABASE_ORIGIN");
+//!# const ADMIN_DATABASE_URL: &str = env!("POSTGRES_ADMIN_URL");
+//!# const DATABASE_ORIGIN: &str = env!("POSTGRES_DB_ORIGIN");
 //!# let migrations = PathBuf::from_str("test_assets/postgres/migrations").unwrap();
 //!
 //!{
@@ -55,8 +55,8 @@
 //!# use diesel::r2d2::Pool;
 //!# use std::path::PathBuf;
 //!# use std::str::FromStr;
-//!# const ADMIN_DATABASE_URL: &str = env!("DROP_DATABASE_URL");
-//!# const DATABASE_ORIGIN: &str = env!("TEST_DATABASE_ORIGIN");
+//!# const ADMIN_DATABASE_URL: &str = env!("POSTGRES_ADMIN_URL");
+//!# const DATABASE_ORIGIN: &str = env!("POSTGRES_DB_ORIGIN");
 //!# pub struct FakeTestDouble;
 //!pub enum DatabaseOrFake {
 //!    Pool(Pool<ConnectionManager<PgConnection>>),

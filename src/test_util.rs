@@ -45,12 +45,12 @@ pub fn is_superuser(conn: &PgConnection) -> QueryResult<bool> {
 
 mod test {
     use super::*;
-    use crate::setup::test::DROP_DATABASE_URL;
+    use crate::setup::test::POSTGRES_ADMIN_URL;
     use diesel::Connection;
 
     #[test]
     fn is_super() {
-        let admin_conn = PgConnection::establish(DROP_DATABASE_URL)
+        let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
         let is_super = is_superuser(&admin_conn).expect("Should get valid response back");
         assert!(is_super)
