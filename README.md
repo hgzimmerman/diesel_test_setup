@@ -4,9 +4,8 @@
 
 A small library for setting up a database using Diesel, and then tearing down the database once the test is finished.
 
-Given a connection to a database that has super user permissions, this library will create a new, uniquely named database.
+Given a connection to a database that has super user permissions, this library will create a new, uniquely-named database and run migrations on it.
 Once a `Cleanup` struct that was created when the database was set up goes out of scope, its destructor will delete the database.
-
 
 ```rust
 use diesel_test_setup::TestDatabaseBuilder;
