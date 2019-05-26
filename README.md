@@ -42,7 +42,13 @@ Tests are intended to be ran using Docker with the following command `docker-com
 ### Wait!
 Before you choose to use this library, there may be better options for your testing needs.
 Take a look at Diesel's built-in [test_transaction](https://docs.diesel.rs/diesel/connection/trait.Connection.html#method.test_transaction).
-This library has higher overhead per-test because it needs to create, migrate, and delete a database for every test, but offers greater flexibility than `test_transaction`.
+Diesel Test Setup has higher overhead per-test because it needs to create, migrate, and delete a database for every test.
+`test_transaction`, on the other hand, runs your code within a transaction and then rolls it back.
+
+This library is well suited to running tests in an environment where there isn't significant initial test data, and you don't want to manually configure a separate test database than your development database.
+Using `test_transaction` works great when you have an already populated test database, and want to be able to run large queries against it without waiting for a setup step.
+Diesel Test Setup may be better for early project development, while using `test_transaction` makes more sense when you have significant data to test with.
+
 
 
 ### Support Commitment
