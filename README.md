@@ -40,6 +40,10 @@ Tests are intended to be ran using Docker with the following command `docker-com
 * Both `r2d2::Pool`s and `diesel::Connection`s are supported.
 
 
+### Wait!
+Before you choose to use this library, there may be better options for your testing needs.
+Take a look at Diesel's built-in [test_transaction](https://docs.diesel.rs/diesel/connection/trait.Connection.html#method.test_transaction).
+This library has higher overhead per-test because it needs to create, migrate, and delete a database for every test, but offers greater flexibility than `test_transaction`.
 
 
 ### Support Commitment
