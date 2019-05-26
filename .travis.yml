@@ -6,6 +6,7 @@ services:
 before_install:
   - docker-compose build
   - docker-compose down
+  - systemctl stop postgres
 
 script:
   - docker-compose run rust cargo test
