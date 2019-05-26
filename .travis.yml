@@ -5,6 +5,7 @@ services:
 
 before_install:
   - docker-compose build
+  - docker-compose down
 
 script:
   - docker-compose run rust cargo test
