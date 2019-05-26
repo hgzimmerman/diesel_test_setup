@@ -1,4 +1,4 @@
-use crate::primitives::drop_database;
+use crate::core::drop_database;
 use crate::setup::*;
 use crate::test_util::{
     database_exists, MYSQL_ADMIN_URL, MYSQL_ORIGIN, POSTGRES_ADMIN_URL, POSTGRES_ORIGIN,

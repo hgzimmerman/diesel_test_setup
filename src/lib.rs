@@ -97,7 +97,7 @@ extern crate migrations_internals;
 mod cleanup;
 mod connection_wrapper;
 mod database_error;
-pub mod primitives;
+pub mod core;
 mod query_helper;
 mod setup;
 #[cfg(test)]

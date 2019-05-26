@@ -1,4 +1,4 @@
-use crate::primitives::drop_database;
+use crate::core::drop_database;
 use crate::RemoteConnection;
 
 /// Drops test databases when it exits scope.
