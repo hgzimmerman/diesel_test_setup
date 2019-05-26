@@ -84,6 +84,7 @@
 //!
 //!# execute_test_with_pool(|pool| {});
 //! ```
+//!
 
 #[cfg(test)]
 #[macro_use]
