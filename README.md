@@ -46,9 +46,9 @@ Diesel Test Setup has higher overhead per-test because it needs to create, migra
 `test_transaction`, on the other hand, runs your code within a transaction and then rolls it back.
 
 This library is well suited to running tests in an environment where there isn't significant initial test data, and you don't want to manually configure a separate test database than your development database.
-It also is useful when you want to set up integration tests that rely on a server framework owning a `r2d2::Pool`, which excludes the possibility of using `test_transaction`.
-Using `test_transaction` works great when you have an already populated test database, and want to be able to run large queries against it without waiting for setup/data-population steps.
-
+It also is useful when you want to set up integration tests that rely on a server framework owning a `r2d2::Pool`.
+While you can configure a `Pool` to begin a test transaction when a connection is given out, you then can't use multiple sequential queries using different connections in your tests.
+Using `test_transaction` works great when you have an already populated test database, want to be able to run large queries against it without waiting for setup/data-population steps, and tests utilizing `Pool`s don't require state changes across multiple queries.
 
 
 
