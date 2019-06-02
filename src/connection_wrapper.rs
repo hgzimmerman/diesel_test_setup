@@ -4,12 +4,11 @@ use diesel::r2d2::PooledConnection;
 use migrations_internals::MigrationConnection;
 use std::ops::Deref;
 use diesel::{QueryResult, ConnectionResult, Queryable};
-use diesel::connection::SimpleConnection;
+use diesel::connection::{SimpleConnection, AnsiTransactionManager};
 use diesel::connection::Connection;
 use diesel::query_builder::{QueryId, QueryFragment, AsQuery};
 use diesel::deserialize::QueryableByName;
 use diesel::sql_types::HasSqlType;
-use diesel::connection::TransactionManager;
 
 /// A struct that enforces drop order for a pool and the cleanup routine.
 #[derive(Debug)]
@@ -95,24 +94,29 @@ where
 
 impl <Conn> Connection for EphemeralDatabaseConnection<Conn>
 where
-    Conn: MigrationConnection + RemoteConnection + 'static,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    <Conn as diesel::Connection>::TransactionManager: TransactionManager<EphemeralDatabaseConnection<Conn>>
+    Conn: MigrationConnection + RemoteConnection + Connection<TransactionManager = AnsiTransactionManager>,
+    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword + diesel::backend::UsesAnsiSavepointSyntax,
 {
-    type Backend = <Conn as Connection>::Backend;
-    type TransactionManager = <Conn as Connection>::TransactionManager;
+    type Backend = Conn::Backend;
+    type TransactionManager = Conn::TransactionManager;
+
 
     /// Establish a connection to the database.
     ///
     /// # Note
     ///
-    /// This requires a url pointing to a database that has authority to create other databases.
+    /// * This requires a url pointing to a database that has authority to create other databases.
+    /// * The `migrations` directory must be even or above the current directory in order for it to be found.
     fn establish(database_url: &str) -> ConnectionResult<Self> {
         let conn = Conn::establish(database_url)?;
         let origin = {
             let split = database_url.split("/");
-            let take = split.clone().count() - 1;
-            split.take(take).collect::<String>()
+            // TODO this method of substringing out the origin is mediocre.
+            let count = split.clone().count();
+            if count < 1 {
+                Err(diesel::result::ConnectionError::InvalidConnectionUrl("Malformed URL: did not point to a specific database".to_string()))?;
+            }
+            split.take(count - 1).collect::<Vec<&str>>().join("/").to_string()
         };
         crate::TestDatabaseBuilder::new(conn, &origin)
             .db_name_prefix("diesel_test_setup")
@@ -120,7 +124,7 @@ where
             .map_err(|e| {
                 match e {
                     TestDatabaseError::ConnectionError(e) => e,
-                    _ => panic!()
+                    e => panic!("{:?}", e)
                 }
             })
     }

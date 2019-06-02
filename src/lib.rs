@@ -115,7 +115,7 @@ use diesel::{r2d2, Connection, MysqlConnection, PgConnection};
 
 type Pool<Conn> = r2d2::Pool<ConnectionManager<Conn>>;
 
-/// A sealed trait that indicates that `Connection` it is implemented for is connected to via a URL, and not a file.
+/// A trait that indicates that `Connection` it is implemented for is connected to via a URL, and not a file.
 ///
 /// It is used to exclude Sqlite from this library.
 pub trait RemoteConnection: Connection {}

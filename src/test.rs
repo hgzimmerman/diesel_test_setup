@@ -3,7 +3,7 @@ use crate::setup::*;
 use crate::test_util::{
     database_exists, MYSQL_ADMIN_URL, MYSQL_ORIGIN, POSTGRES_ADMIN_URL, POSTGRES_ORIGIN,
 };
-use crate::Pool;
+use crate::{Pool};
 use diesel::{Connection, MysqlConnection, PgConnection};
 use std::ops::Deref;
 use std::path::Path;
@@ -169,3 +169,11 @@ fn mysql() {
     )
     .unwrap();
 }
+
+// TODO move this to a separate test suite where this won't break other tests
+//#[test]
+//fn establish_for_ephemeral_connection() {
+//    std::env::set_current_dir(std::env::current_dir().unwrap().join(Path::new("test_assets/postgres")));
+//    let test_db_conn = EphemeralDatabaseConnection::<PgConnection>::establish(POSTGRES_ADMIN_URL).expect("Should establish connection and create database");
+//    std::env::set_current_dir(Path::new("../.."));
+//}
