@@ -17,7 +17,7 @@ fn cleanup_drops_db_after_panic() {
     {
         let admin_conn = PgConnection::establish(POSTGRES_ADMIN_URL)
             .expect("Should be able to connect to admin db");
-        drop_database(&admin_conn, &db_name).expect("should drop");;
+        drop_database(&admin_conn, &db_name).expect("should drop");
     }
 
     std::panic::catch_unwind(|| {

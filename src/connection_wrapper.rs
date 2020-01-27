@@ -1,14 +1,9 @@
-use crate::{Cleanup, Pool, RemoteConnection, TestDatabaseError};
+use crate::{Cleanup, Pool, RemoteConnection};
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use migrations_internals::MigrationConnection;
 use std::ops::Deref;
-use diesel::{QueryResult, ConnectionResult, Queryable};
-use diesel::connection::{SimpleConnection, AnsiTransactionManager};
-use diesel::connection::Connection;
-use diesel::query_builder::{QueryId, QueryFragment, AsQuery};
-use diesel::deserialize::QueryableByName;
-use diesel::sql_types::HasSqlType;
+
 
 /// A struct that enforces drop order for a pool and the cleanup routine.
 #[derive(Debug)]
@@ -77,99 +72,3 @@ where
     }
 }
 
-impl<Conn> Deref for EphemeralDatabaseConnection<Conn>
-where
-    Conn: MigrationConnection + RemoteConnection + 'static,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-    PooledConnection<ConnectionManager<Conn>>: Deref<Target = Conn>,
-{
-    type Target = Conn;
-
-    fn deref(&self) -> &Self::Target {
-        &self.connection
-    }
-}
-
-
-
-impl <Conn> Connection for EphemeralDatabaseConnection<Conn>
-where
-    Conn: MigrationConnection + RemoteConnection + Connection<TransactionManager = AnsiTransactionManager>,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword + diesel::backend::UsesAnsiSavepointSyntax,
-{
-    type Backend = Conn::Backend;
-    type TransactionManager = Conn::TransactionManager;
-
-
-    /// Establish a connection to the database.
-    ///
-    /// # Note
-    ///
-    /// * This requires a url pointing to a database that has authority to create other databases.
-    /// * The `migrations` directory must be even or above the current directory in order for it to be found.
-    fn establish(database_url: &str) -> ConnectionResult<Self> {
-        let conn = Conn::establish(database_url)?;
-        let origin = {
-            let split = database_url.split("/");
-            // TODO this method of substringing out the origin is mediocre.
-            let count = split.clone().count();
-            if count < 1 {
-                Err(diesel::result::ConnectionError::InvalidConnectionUrl("Malformed URL: did not point to a specific database".to_string()))?;
-            }
-            split.take(count - 1).collect::<Vec<&str>>().join("/").to_string()
-        };
-        crate::TestDatabaseBuilder::new(conn, &origin)
-            .db_name_prefix("diesel_test_setup")
-            .setup_connection()
-            .map_err(|e| {
-                match e {
-                    TestDatabaseError::ConnectionError(e) => e,
-                    e => panic!("{:?}", e)
-                }
-            })
-    }
-
-    fn execute(&self, query: &str) -> QueryResult<usize> {
-        self.connection.execute(query)
-    }
-
-    fn query_by_index<T, U>(&self, source: T) -> QueryResult<Vec<U>>
-    where
-        T: AsQuery,
-        T::Query: QueryFragment<Self::Backend> + QueryId,
-        Self::Backend: HasSqlType<T::SqlType>,
-        U: Queryable<T::SqlType, Self::Backend>
-    {
-        self.connection.query_by_index(source)
-    }
-
-    fn query_by_name<T, U>(&self, source: &T) -> QueryResult<Vec<U>>
-    where
-        T: QueryFragment<Self::Backend> + QueryId,
-        U: QueryableByName<Self::Backend>
-    {
-        self.connection.query_by_name(source)
-    }
-
-    fn execute_returning_count<T>(&self, source: &T) -> QueryResult<usize>
-    where
-        T: QueryFragment<Self::Backend> + QueryId
-    {
-        self.connection.execute_returning_count(source)
-    }
-
-    fn transaction_manager(&self) -> &Self::TransactionManager {
-        self.connection.transaction_manager()
-    }
-}
-
-impl <Conn> SimpleConnection for EphemeralDatabaseConnection<Conn>
-where
-    Conn: MigrationConnection + RemoteConnection + SimpleConnection + 'static,
-    <Conn as diesel::Connection>::Backend: diesel::backend::SupportsDefaultKeyword,
-{
-    fn batch_execute(&self, query: &str) -> QueryResult<()> {
-        self.connection.batch_execute(query)
-
-    }
-}
